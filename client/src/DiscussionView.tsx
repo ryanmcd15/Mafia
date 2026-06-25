@@ -10,7 +10,7 @@ export function formatTime(seconds: number): string {
 }
 
 export function DiscussionView(): React.JSX.Element {
-  const { players, myPlayer, roomCode, voteHistory, accusationResults } = useGameStore();
+  const { players, myPlayer, roomCode, voteHistory, accusationResults, round } = useGameStore();
   const [timeLeft, setTimeLeft] = useState(120);
   const [accusationTarget, setAccusationTarget] = useState<string | null>(null);
   const [accusationSubmitted, setAccusationSubmitted] = useState(false);
@@ -35,6 +35,11 @@ export function DiscussionView(): React.JSX.Element {
 
   return (
     <div style={styles.container}>
+      {/* Round indicator */}
+      <p style={{ fontSize: "14px", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "2px" }}>
+        Day {round}
+      </p>
+
       {/* Countdown Timer */}
       <div aria-label="Discussion time remaining" style={styles.timer}>
         {formatTime(timeLeft)}

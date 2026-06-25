@@ -73,11 +73,16 @@ export class PhaseController {
 
     // Case 1: No kill target — quiet night
     if (killTarget === null) {
+      const variants = [
+        ["The night passed quietly.", "No one was harmed."],
+        ["A peaceful silence blanketed the town.", "All survived until dawn."],
+        ["The shadows retreated without claiming a soul.", "Everyone woke safely."],
+        ["Nothing stirred in the darkness.", "Morning arrived without incident."],
+        ["The town slept undisturbed.", "A rare, quiet night."],
+      ];
+      const segments = variants[Math.floor(Math.random() * variants.length)];
       return {
-        segments: [
-          "The night passed quietly.",
-          "No one was harmed.",
-        ],
+        segments,
         eliminatedPlayerId: null,
         wasSaved: false,
       };
@@ -85,11 +90,16 @@ export class PhaseController {
 
     // Case 2: Kill target was saved by Medic
     if (killTarget === saveTarget) {
+      const variants = [
+        ["The night was tense.", "Shadows moved through the town… but when morning came, everyone survived."],
+        ["Something dark stirred in the night.", "Yet by some miracle, no one was lost."],
+        ["The danger was real, but someone watched over the town.", "All souls accounted for at dawn."],
+        ["A close call in the dead of night.", "But fate was kind — everyone lives to see another day."],
+        ["Evil crept close… but was turned away.", "The town breathes a sigh of relief."],
+      ];
+      const segments = variants[Math.floor(Math.random() * variants.length)];
       return {
-        segments: [
-          "The night was tense.",
-          "Shadows moved through the town… but when morning came, everyone survived.",
-        ],
+        segments,
         eliminatedPlayerId: null,
         wasSaved: true,
       };
@@ -109,11 +119,17 @@ export class PhaseController {
       room.gameState.eliminatedPlayers.push(killTarget);
     }
 
+    const variants = [
+      ["As dawn broke, the town gathered in the square.", `${eliminatedPlayer.name} was found… eliminated.`],
+      ["Morning light revealed a grim scene.", `${eliminatedPlayer.name} did not survive the night.`],
+      ["The town awoke to devastating news.", `${eliminatedPlayer.name} has been taken from us.`],
+      ["A scream pierced the morning air.", `${eliminatedPlayer.name} was found lifeless.`],
+      ["The sun rose on a darker day.", `${eliminatedPlayer.name} will never wake again.`],
+    ];
+    const segments = variants[Math.floor(Math.random() * variants.length)];
+
     return {
-      segments: [
-        "As dawn broke, the town gathered in the square.",
-        `${eliminatedPlayer.name} was found… eliminated.`,
-      ],
+      segments,
       eliminatedPlayerId: killTarget,
       wasSaved: false,
     };

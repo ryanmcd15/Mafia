@@ -15,6 +15,24 @@ export function GameOverView(): React.JSX.Element {
 
   return (
     <div style={styles.container}>
+      {/* Confetti particles */}
+      <div style={styles.confettiContainer} aria-hidden="true">
+        {Array.from({ length: 30 }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              ...styles.confetti,
+              left: `${Math.random() * 100}%`,
+              backgroundColor: isCiviliansWin
+                ? ["#2ed573", "#7bed9f", "#4ecdc4", "#45b7d1", "#96ceb4"][i % 5]
+                : ["#ff4757", "#ff6b6b", "#ffa502", "#ff6348", "#eb3b5a"][i % 5],
+              animationDelay: `${Math.random() * 2}s`,
+              animationDuration: `${2 + Math.random() * 2}s`,
+            }}
+          />
+        ))}
+      </div>
+      <style>{confettiKeyframes}</style>
       {/* Winner Announcement Banner */}
       <div
         style={{
@@ -189,4 +207,26 @@ const styles: Record<string, React.CSSProperties> = {
     color: "var(--text-secondary)",
     fontStyle: "italic",
   },
+  confettiContainer: {
+    position: "fixed",
+    inset: 0,
+    pointerEvents: "none",
+    overflow: "hidden",
+    zIndex: 0,
+  },
+  confetti: {
+    position: "absolute",
+    top: "-10px",
+    width: "8px",
+    height: "8px",
+    borderRadius: "2px",
+    animation: "confettiFall 3s ease-in forwards",
+  },
 };
+
+const confettiKeyframes = `
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+`;

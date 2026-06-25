@@ -42,6 +42,7 @@ export function ResultsView(): React.JSX.Element {
           <p style={styles.tieLabel}>No one was eliminated</p>
         )}
       </div>
+      <style>{resultsKeyframes}</style>
     </div>
   );
 }
@@ -55,12 +56,13 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     backgroundColor: "var(--bg-primary)",
     zIndex: 1000,
-    animation: "fadeIn 0.4s ease-out",
+    animation: "shakeIn 0.5s ease-out",
   },
   content: {
     textAlign: "center",
     padding: "24px",
-    animation: "scaleIn 0.5s ease-out",
+    animation: "scaleReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
+    transform: "scale(0)",
   },
   eliminatedLabel: {
     fontSize: "14px",
@@ -100,3 +102,21 @@ const styles: Record<string, React.CSSProperties> = {
     fontStyle: "italic",
   },
 };
+
+const resultsKeyframes = `
+@keyframes scaleReveal {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes shakeIn {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-4px); }
+  30% { transform: translateX(4px); }
+  45% { transform: translateX(-3px); }
+  60% { transform: translateX(3px); }
+  75% { transform: translateX(-1px); }
+  90% { transform: translateX(1px); }
+}
+`;

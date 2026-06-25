@@ -22,6 +22,8 @@ function makePlayer(
     isHost,
     isConnected: true,
     disconnectedAt: null,
+    isReady: false,
+    color: "#FF6B6B",
   };
 }
 
@@ -683,6 +685,8 @@ describe("PhaseController", () => {
               isHost: true,
               isConnected: true,
               disconnectedAt: null,
+              isReady: false,
+              color: "#FF6B6B",
             };
             const medicPlayer: Player = {
               id: "medic1",
@@ -692,6 +696,8 @@ describe("PhaseController", () => {
               isHost: false,
               isConnected: true,
               disconnectedAt: null,
+              isReady: false,
+              color: "#4ECDC4",
             };
             const civilian1: Player = {
               id: "civ1",
@@ -701,6 +707,8 @@ describe("PhaseController", () => {
               isHost: false,
               isConnected: true,
               disconnectedAt: null,
+              isReady: false,
+              color: "#45B7D1",
             };
             const civilian2: Player = {
               id: "civ2",
@@ -710,6 +718,8 @@ describe("PhaseController", () => {
               isHost: false,
               isConnected: true,
               disconnectedAt: null,
+              isReady: false,
+              color: "#96CEB4",
             };
 
             const controller = new PhaseController();
@@ -854,6 +864,8 @@ describe("PhaseController", () => {
               isHost: i === 0,
               isConnected: true,
               disconnectedAt: null,
+              isReady: false,
+              color: "#FF6B6B",
             }));
             const room = makeRoom(players, GamePhase.RoleReveal);
             roomsToCleanup.push(room);

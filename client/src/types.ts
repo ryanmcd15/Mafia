@@ -28,6 +28,8 @@ export interface Player {
   isHost: boolean;
   isConnected: boolean;
   disconnectedAt: string | null;
+  isReady?: boolean;
+  color?: string;
 }
 
 export interface NarrationResult {
@@ -62,4 +64,5 @@ export interface GameStore {
   disconnectedAt: number | null;
   voteHistory: Array<{ round: number; votes: Record<string, string> }>;
   accusationResults: Record<string, number> | null;
+  round: number;
 }

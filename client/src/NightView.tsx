@@ -4,7 +4,7 @@ import socket from "./socket";
 import { Role, Player } from "./types";
 
 export function NightView(): React.JSX.Element {
-  const { role, players, myPlayer } = useGameStore();
+  const { role, players, myPlayer, round } = useGameStore();
 
   if (role === Role.Killer) {
     return <KillerSubView players={players} myPlayer={myPlayer} />;
@@ -14,7 +14,7 @@ export function NightView(): React.JSX.Element {
     return <MedicSubView players={players} myPlayer={myPlayer} />;
   }
 
-  return <CivilianSubView />;
+  return <CivilianSubView round={round} />;
 }
 
 // --- Killer Sub-View ---
@@ -150,7 +150,7 @@ function MedicSubView({
 
 // --- Civilian Sub-View ---
 
-function CivilianSubView(): React.JSX.Element {
+function CivilianSubView({ round }: { round: number }): React.JSX.Element {
   return (
     <div style={styles.cinematicContainer}>
       {/* Pulsing moon */}
@@ -168,6 +168,9 @@ function CivilianSubView(): React.JSX.Element {
         <div style={{ ...styles.star, top: "15%", left: "90%", animationDelay: "1.5s" }} />
       </div>
 
+      <p style={{ fontSize: "14px", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "2px", marginBottom: "8px", position: "relative", zIndex: 1 }}>
+        Night {round}
+      </p>
       <p style={styles.cinematicText}>Night falls… everyone is asleep.</p>
 
       <style>{nightKeyframes}</style>

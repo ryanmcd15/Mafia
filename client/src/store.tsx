@@ -22,7 +22,7 @@ type Action =
   | { type: "ROOM_UPDATED"; players: Player[]; roomCode: string; phase: GamePhase }
   | { type: "GAME_STARTED"; phase: GamePhase }
   | { type: "ROLE_ASSIGNED"; role: Role }
-  | { type: "PHASE_CHANGED"; phase: GamePhase; players: Player[]; voteHistory?: Array<{ round: number; votes: Record<string, string> }> }
+  | { type: "PHASE_CHANGED"; phase: GamePhase; players: Player[]; voteHistory?: Array<{ round: number; votes: Record<string, string> }>; round?: number }
   | { type: "MORNING_NARRATION"; narration: NarrationResult }
   | { type: "VOTING_OPENED"; phase: GamePhase }
   | { type: "VOTE_RESULTS"; voteResult: VoteResult }
@@ -49,6 +49,7 @@ const initialState: GameStore = {
   disconnectedAt: null,
   voteHistory: [],
   accusationResults: null,
+  round: 1,
 };
 
 function gameReducer(state: GameStore, action: Action): GameStore {
@@ -75,6 +76,7 @@ function gameReducer(state: GameStore, action: Action): GameStore {
           action.players.find((p) => p.id === socket.id) ?? state.myPlayer,
         voteHistory: action.voteHistory ?? state.voteHistory,
         accusationResults: null, // Clear accusations on phase change
+        round: action.round ?? state.round,
       };
     case "MORNING_NARRATION":
       return { ...state, narration: action.narration };
@@ -157,12 +159,13 @@ export function GameProvider({
       dispatch({ type: "ROLE_ASSIGNED", role: data.role });
     }
 
-    function onPhaseChanged(data: { phase: GamePhase; players: Player[]; voteHistory?: Array<{ round: number; votes: Record<string, string> }> }) {
+    function onPhaseChanged(data: { phase: GamePhase; players: Player[]; voteHistory?: Array<{ round: number; votes: Record<string, string> }>; round?: number }) {
       dispatch({
         type: "PHASE_CHANGED",
         phase: data.phase,
         players: data.players,
         voteHistory: data.voteHistory,
+        round: data.round,
       });
     }
 

@@ -35,8 +35,11 @@ function serializeRoom(room: Room) {
       isAlive: p.isAlive,
       isHost: p.isHost,
       isConnected: p.isConnected,
+      isReady: p.isReady,
+      color: p.color,
     })),
     phase: room.phase,
+    round: room.gameState?.round ?? 1,
   };
 }
 
@@ -354,10 +357,48 @@ io.on("connection", (socket) => {
     }
   });
 
+  // --- toggleReady ---
+  socket.on("toggleReady", (payload, callback) => {
+    try {
+      const { roomCode } = payload;
+      const room = gameManager.getRoom(roomCode);
+
+      if (!room) throw new Error("Room not found.");
+      if (room.phase !== GamePhase.Lobby) throw new Error("Can only toggle ready in Lobby.");
+
+      const player = room.players.get(socket.id);
+      if (!player) throw new Error("Player not found in room.");
+
+      player.isReady = !player.isReady;
+
+      io.to(roomCode).emit("roomUpdated", serializeRoom(room));
+
+      if (typeof callback === "function") {
+        callback({ success: true, isReady: player.isReady });
+      }
+    } catch (err: any) {
+      const message = err?.message ?? "Failed to toggle ready.";
+      socket.emit("error", { success: false, error: message });
+      if (typeof callback === "function") {
+        callback({ success: false, error: message });
+      }
+    }
+  });
+
   // --- startGame ---
   socket.on("startGame", (payload, callback) => {
     try {
       const { roomCode } = payload;
+
+      // Check all players are ready before starting
+      const preRoom = gameManager.getRoom(roomCode);
+      if (preRoom) {
+        const allReady = Array.from(preRoom.players.values()).every((p) => p.isReady || p.isHost);
+        if (!allReady) {
+          throw new Error("All players must be ready before starting.");
+        }
+      }
+
       const room = gameManager.startGame(roomCode, socket.id);
 
       // Emit gameStarted to room

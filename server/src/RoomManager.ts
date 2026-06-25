@@ -7,6 +7,19 @@ const MAX_HOST_NAME_LENGTH = 32;
 const MAX_PLAYER_NAME_LENGTH = 20;
 const MAX_PLAYERS_PER_ROOM = 10;
 
+const PLAYER_COLORS = [
+  "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4",
+  "#FFEAA7", "#DDA0DD", "#98D8C8", "#F7DC6F",
+  "#BB8FCE", "#85C1E9",
+];
+
+let colorIndex = 0;
+function getNextColor(): string {
+  const color = PLAYER_COLORS[colorIndex % PLAYER_COLORS.length];
+  colorIndex++;
+  return color;
+}
+
 export class RoomManager {
   private rooms: Map<string, Room> = new Map();
 
@@ -55,6 +68,8 @@ export class RoomManager {
       isHost: true,
       isConnected: true,
       disconnectedAt: null,
+      isReady: false,
+      color: getNextColor(),
     };
 
     const room: Room = {
@@ -102,6 +117,8 @@ export class RoomManager {
       isHost: false,
       isConnected: true,
       disconnectedAt: null,
+      isReady: false,
+      color: getNextColor(),
     };
 
     room.players.set(socketId, player);

@@ -7,10 +7,17 @@ export function LobbyView(): React.JSX.Element {
 
   const isHost = myPlayer?.isHost ?? false;
   const canStart = players.length >= 4;
+  const allReady = players.every((p) => p.isReady || p.isHost);
 
   function handleStartGame() {
-    if (canStart && roomCode) {
+    if (canStart && allReady && roomCode) {
       socket.emit("startGame", { roomCode });
+    }
+  }
+
+  function handleToggleReady() {
+    if (roomCode) {
+      socket.emit("toggleReady", { roomCode });
     }
   }
 
@@ -30,32 +37,75 @@ export function LobbyView(): React.JSX.Element {
         <ul style={styles.playerList}>
           {players.map((player) => (
             <li key={player.id} style={styles.playerItem}>
-              <span style={styles.playerName}>{player.name}</span>
-              {player.isHost && (
-                <span style={styles.hostBadge}>👑 Host</span>
-              )}
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div
+                  style={{
+                    width: "12px",
+                    height: "12px",
+                    borderRadius: "50%",
+                    backgroundColor: player.color ?? "#666",
+                    flexShrink: 0,
+                  }}
+                />
+                <span style={styles.playerName}>{player.name}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                {player.isHost && (
+                  <span style={styles.hostBadge}>👑 Host</span>
+                )}
+                {!player.isHost && (
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: player.isReady ? "var(--success, #2ed573)" : "var(--text-secondary)",
+                    }}
+                  >
+                    {player.isReady ? "✓ Ready" : "Not ready"}
+                  </span>
+                )}
+              </div>
             </li>
           ))}
         </ul>
       </div>
+
+      {/* Ready Toggle (non-host only) */}
+      {!isHost && (
+        <button
+          onClick={handleToggleReady}
+          style={{
+            ...styles.readyButton,
+            backgroundColor: myPlayer?.isReady ? "var(--success, #2ed573)" : "var(--bg-tertiary)",
+            color: myPlayer?.isReady ? "#fff" : "var(--text-secondary)",
+          }}
+        >
+          {myPlayer?.isReady ? "✓ Ready!" : "Ready Up"}
+        </button>
+      )}
 
       {/* Start Game Button (Host only) */}
       {isHost && (
         <div style={styles.startSection}>
           <button
             onClick={handleStartGame}
-            disabled={!canStart}
+            disabled={!canStart || !allReady}
             style={{
               ...styles.startButton,
-              ...(canStart ? styles.startButtonEnabled : styles.startButtonDisabled),
+              ...(canStart && allReady ? styles.startButtonEnabled : styles.startButtonDisabled),
             }}
-            aria-disabled={!canStart}
+            aria-disabled={!canStart || !allReady}
           >
             Start Game
           </button>
           {!canStart && (
             <p style={styles.helperText}>
               Need at least 4 players to start
+            </p>
+          )}
+          {canStart && !allReady && (
+            <p style={styles.helperText}>
+              Waiting for all players to ready up
             </p>
           )}
         </div>
@@ -124,6 +174,18 @@ const styles: Record<string, React.CSSProperties> = {
   hostBadge: {
     fontSize: "14px",
     color: "var(--warning, #ffa502)",
+  },
+  readyButton: {
+    width: "100%",
+    maxWidth: "400px",
+    minHeight: "44px",
+    padding: "14px 24px",
+    fontSize: "16px",
+    fontWeight: "bold",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    transition: "background-color 0.2s",
   },
   startSection: {
     width: "100%",

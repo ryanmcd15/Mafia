@@ -27,6 +27,8 @@ export interface Player {
   isHost: boolean; // Host flag
   isConnected: boolean; // Connection status
   disconnectedAt: Date | null; // Timestamp of disconnect, null if connected
+  isReady: boolean; // Ready status in Lobby
+  color: string; // Player color for visual tracking
 }
 
 export interface GameState {

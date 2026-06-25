@@ -17,6 +17,8 @@ function makePlayer(id: string, isAlive = true, isHost = false): Player {
     isHost,
     isConnected: true,
     disconnectedAt: null,
+    isReady: false,
+    color: "#FF6B6B",
   };
 }
 
