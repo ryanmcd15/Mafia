@@ -40,6 +40,32 @@ function serializeRoom(room: Room) {
   };
 }
 
+// --- Helper: transfer host to a living player if current host is dead ---
+function transferHostIfDead(room: Room, roomCode: string): void {
+  const currentHost = room.players.get(room.hostId);
+  // If host is still alive, nothing to do
+  if (currentHost && currentHost.isAlive) return;
+
+  // Find the first living, connected player to become host
+  const newHost = Array.from(room.players.values()).find(
+    (p) => p.isAlive && p.isConnected
+  );
+
+  if (!newHost) return; // No eligible host (shouldn't happen if game is still running)
+
+  // Remove host flag from old host
+  if (currentHost) {
+    currentHost.isHost = false;
+  }
+
+  // Set new host
+  newHost.isHost = true;
+  room.hostId = newHost.id;
+
+  // Emit roomUpdated so clients see the new host
+  io.to(roomCode).emit("roomUpdated", serializeRoom(room));
+}
+
 // --- Helper: advance to Morning phase after night actions resolve ---
 function advanceToMorning(room: Room, roomCode: string): void {
   const narrationResult = phaseController.resolveNightActions(room);
@@ -63,6 +89,7 @@ function advanceToMorning(room: Room, roomCode: string): void {
 
   // Check win condition after night elimination
   if (narrationResult.eliminatedPlayerId) {
+    transferHostIfDead(room, roomCode);
     const winCondition = phaseController.checkWinCondition(room);
     if (winCondition) {
       phaseController.transitionTo(room, GamePhase.GameOver);
@@ -185,6 +212,9 @@ function handleVoteComplete(room: Room, roomCode: string): void {
       playerName: eliminated?.name ?? "Unknown",
       role: eliminated?.role ?? null,
     });
+
+    // Transfer host if the eliminated player was the host
+    transferHostIfDead(room, roomCode);
 
     // Check win condition
     const winCondition = phaseController.checkWinCondition(room);

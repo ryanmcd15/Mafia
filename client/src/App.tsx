@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ConnectionLostModal, GameProvider, useGameStore } from "./store";
 import { HomeView } from "./HomeView";
 import { LobbyView } from "./LobbyView";
@@ -39,6 +39,44 @@ function ErrorToast(): React.JSX.Element | null {
       }}
     >
       {error}
+    </div>
+  );
+}
+
+/** Wraps children with a fade-to-black transition on phase changes */
+function PhaseTransition({ children }: { children: React.ReactNode }): React.JSX.Element {
+  const { phase } = useGameStore();
+  const [displayedChildren, setDisplayedChildren] = useState(children);
+  const [fading, setFading] = useState(false);
+  const prevPhaseRef = useRef(phase);
+
+  useEffect(() => {
+    // Skip fade for initial render or if phase hasn't changed
+    if (prevPhaseRef.current === phase) {
+      setDisplayedChildren(children);
+      return;
+    }
+
+    // Phase changed — fade out, swap content, fade in
+    setFading(true);
+    const timer = setTimeout(() => {
+      setDisplayedChildren(children);
+      setFading(false);
+      prevPhaseRef.current = phase;
+    }, 400); // fade-out duration
+
+    return () => clearTimeout(timer);
+  }, [phase, children]);
+
+  return (
+    <div
+      style={{
+        opacity: fading ? 0 : 1,
+        transition: "opacity 0.4s ease-in-out",
+        minHeight: "100vh",
+      }}
+    >
+      {displayedChildren}
     </div>
   );
 }
@@ -84,7 +122,9 @@ function App(): React.JSX.Element {
     <GameProvider>
       <ConnectionLostModal />
       <ErrorToast />
-      <GameContent />
+      <PhaseTransition>
+        <GameContent />
+      </PhaseTransition>
     </GameProvider>
   );
 }

@@ -153,10 +153,39 @@ function MedicSubView({
 function CivilianSubView(): React.JSX.Element {
   return (
     <div style={styles.cinematicContainer}>
+      {/* Pulsing moon */}
+      <div style={styles.moon} aria-hidden="true" />
+
+      {/* Drifting stars */}
+      <div style={styles.starsContainer} aria-hidden="true">
+        <div style={{ ...styles.star, top: "12%", left: "15%", animationDelay: "0s" }} />
+        <div style={{ ...styles.star, top: "8%", left: "72%", animationDelay: "1.2s" }} />
+        <div style={{ ...styles.star, top: "25%", left: "85%", animationDelay: "0.6s" }} />
+        <div style={{ ...styles.star, top: "18%", left: "40%", animationDelay: "2.1s" }} />
+        <div style={{ ...styles.star, top: "35%", left: "22%", animationDelay: "1.8s" }} />
+        <div style={{ ...styles.star, top: "5%", left: "55%", animationDelay: "0.3s" }} />
+        <div style={{ ...styles.star, top: "30%", left: "65%", animationDelay: "2.5s" }} />
+        <div style={{ ...styles.star, top: "15%", left: "90%", animationDelay: "1.5s" }} />
+      </div>
+
       <p style={styles.cinematicText}>Night falls… everyone is asleep.</p>
+
+      <style>{nightKeyframes}</style>
     </div>
   );
 }
+
+const nightKeyframes = `
+@keyframes moonPulse {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes starDrift {
+  0%, 100% { opacity: 0.3; transform: translateY(0px); }
+  50% { opacity: 1; transform: translateY(-4px); }
+}
+`;
 
 // --- Styles ---
 
@@ -243,6 +272,8 @@ const styles: Record<string, React.CSSProperties> = {
     minHeight: "100vh",
     padding: "24px 16px",
     backgroundColor: "var(--bg-primary)",
+    position: "relative",
+    overflow: "hidden",
   },
   cinematicText: {
     fontSize: "22px",
@@ -250,5 +281,31 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: "center",
     fontStyle: "italic",
     lineHeight: 1.6,
+    position: "relative",
+    zIndex: 1,
+  },
+  moon: {
+    width: "80px",
+    height: "80px",
+    borderRadius: "50%",
+    background: "radial-gradient(circle at 35% 35%, #f0e68c, #d4a843)",
+    boxShadow: "0 0 40px rgba(240, 230, 140, 0.4), 0 0 80px rgba(240, 230, 140, 0.15)",
+    marginBottom: "40px",
+    animation: "moonPulse 4s ease-in-out infinite",
+    position: "relative",
+    zIndex: 1,
+  },
+  starsContainer: {
+    position: "absolute",
+    inset: 0,
+    pointerEvents: "none",
+  },
+  star: {
+    position: "absolute",
+    width: "4px",
+    height: "4px",
+    borderRadius: "50%",
+    backgroundColor: "#ffffff",
+    animation: "starDrift 3s ease-in-out infinite",
   },
 };
