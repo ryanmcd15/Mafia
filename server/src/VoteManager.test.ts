@@ -29,6 +29,10 @@ function makeGameState(): GameState {
     phaseTimer: null,
     roleAcknowledgements: new Set(),
     narrationCompletes: new Set(),
+    voteHistory: [],
+    accusations: new Map(),
+    accusationResults: null,
+    round: 1,
   };
 }
 

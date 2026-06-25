@@ -98,10 +98,17 @@ function advanceToMorning(room: Room, roomCode: string): void {
 function advanceToDiscussion(room: Room, roomCode: string): void {
   phaseController.transitionTo(room, GamePhase.Discussion);
 
+  // Clear accusations for the new discussion round
+  if (room.gameState) {
+    room.gameState.accusations = new Map();
+    room.gameState.accusationResults = null;
+  }
+
   io.to(roomCode).emit("phaseChanged", {
     phase: room.phase,
     roomCode: room.roomCode,
     players: Array.from(room.players.values()),
+    voteHistory: room.gameState?.voteHistory ?? [],
   });
 
   // Start Discussion timer (120s) — auto-advance to Voting on expiry
@@ -134,6 +141,25 @@ function advanceToVoting(room: Room, roomCode: string): void {
 
 // --- Helper: handle vote completion (tally and resolve) ---
 function handleVoteComplete(room: Room, roomCode: string): void {
+  // Save vote history before tallying
+  if (room.gameState) {
+    const voteRecord: Record<string, string> = {};
+    for (const [voterId, targetId] of room.gameState.votes.entries()) {
+      const voterName = room.players.get(voterId)?.name ?? "Unknown";
+      if (targetId === "__SKIP__") {
+        voteRecord[voterName] = "Skip";
+      } else {
+        const targetName = room.players.get(targetId)?.name ?? "Unknown";
+        voteRecord[voterName] = targetName;
+      }
+    }
+    room.gameState.voteHistory.push({
+      round: room.gameState.round,
+      votes: voteRecord,
+    });
+    room.gameState.round++;
+  }
+
   const voteResult = voteManager.tallyVotes(room);
 
   // Emit vote results
@@ -264,6 +290,16 @@ io.on("connection", (socket) => {
             roomCode: room.roomCode,
             players: Array.from(room.players.values()),
           });
+
+          // Re-emit roleAssigned to the reconnecting player so they know their role
+          const reconnectedPlayer = room.players.get(socket.id);
+          if (reconnectedPlayer && reconnectedPlayer.role) {
+            socket.emit("roleAssigned", {
+              role: reconnectedPlayer.role,
+              playerName: reconnectedPlayer.name,
+            });
+          }
+
           if (typeof callback === "function") {
             callback({ success: true, reconnected: true });
           }
@@ -476,6 +512,56 @@ io.on("connection", (socket) => {
     }
   });
 
+  // --- submitAccusation ---
+  socket.on("submitAccusation", (payload, callback) => {
+    try {
+      const { roomCode, targetId } = payload;
+      const room = gameManager.getRoom(roomCode);
+
+      if (!room) throw new Error("Room not found.");
+      if (!room.gameState) throw new Error("Game has not started.");
+      if (room.phase !== GamePhase.Discussion) throw new Error("Accusations only during Discussion phase.");
+
+      const player = room.players.get(socket.id);
+      if (!player) throw new Error("Player not found in room.");
+      if (!player.isAlive) throw new Error("Dead players cannot accuse.");
+
+      if (room.gameState.accusations.has(socket.id)) {
+        throw new Error("You have already submitted an accusation this round.");
+      }
+
+      // Validate target exists and is alive
+      const target = room.players.get(targetId);
+      if (!target) throw new Error("Target not found in room.");
+      if (!target.isAlive) throw new Error("Cannot accuse a player who is not alive.");
+
+      room.gameState.accusations.set(socket.id, targetId);
+
+      // Check if all living players have accused
+      const livingPlayers = Array.from(room.players.values()).filter((p) => p.isAlive);
+      if (room.gameState.accusations.size >= livingPlayers.length) {
+        // Tally accusation results (anonymous — only show counts)
+        const results: Record<string, number> = {};
+        for (const accusedId of room.gameState.accusations.values()) {
+          const accusedName = room.players.get(accusedId)?.name ?? "Unknown";
+          results[accusedName] = (results[accusedName] || 0) + 1;
+        }
+        room.gameState.accusationResults = results;
+        io.to(roomCode).emit("accusationResults", { results });
+      }
+
+      if (typeof callback === "function") {
+        callback({ success: true });
+      }
+    } catch (err: any) {
+      const message = err?.message ?? "Failed to submit accusation.";
+      socket.emit("error", { success: false, error: message });
+      if (typeof callback === "function") {
+        callback({ success: false, error: message });
+      }
+    }
+  });
+
   // --- submitVote ---
   socket.on("submitVote", (payload, callback) => {
     try {
@@ -501,6 +587,38 @@ io.on("connection", (socket) => {
       }
     } catch (err: any) {
       const message = err?.message ?? "Failed to submit vote.";
+      socket.emit("error", { success: false, error: message });
+      if (typeof callback === "function") {
+        callback({ success: false, error: message });
+      }
+    }
+  });
+
+  // --- submitSkipVote ---
+  socket.on("submitSkipVote", (payload, callback) => {
+    try {
+      const { roomCode } = payload;
+      const room = gameManager.getRoom(roomCode);
+
+      if (!room) throw new Error("Room not found.");
+      if (!room.gameState) throw new Error("Game has not started.");
+      if (room.phase !== GamePhase.Voting) throw new Error("Voting is not active.");
+
+      // VoteManager handles alive/duplicate validation
+      voteManager.recordSkipVote(room, socket.id);
+
+      // Check if all living players have voted
+      const livingPlayers = Array.from(room.players.values()).filter((p) => p.isAlive);
+      if (room.gameState.votes.size >= livingPlayers.length) {
+        phaseController.cancelPhaseTimer(room);
+        handleVoteComplete(room, roomCode);
+      }
+
+      if (typeof callback === "function") {
+        callback({ success: true });
+      }
+    } catch (err: any) {
+      const message = err?.message ?? "Failed to submit skip vote.";
       socket.emit("error", { success: false, error: message });
       if (typeof callback === "function") {
         callback({ success: false, error: message });

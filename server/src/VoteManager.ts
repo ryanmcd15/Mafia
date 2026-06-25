@@ -1,5 +1,8 @@
 import { Room, VoteResult } from "./types.js";
 
+/** Sentinel target ID representing a "skip" vote (no elimination) */
+export const SKIP_VOTE_TARGET = "__SKIP__";
+
 export class VoteManager {
   /**
    * Records a vote from a living player to eliminate another living player.
@@ -40,6 +43,34 @@ export class VoteManager {
   }
 
   /**
+   * Records a skip vote from a living player.
+   * A skip vote means the player chooses not to eliminate anyone.
+   * Validates:
+   * - Voter is alive
+   * - Voter has not already voted
+   */
+  recordSkipVote(room: Room, voterId: string): void {
+    if (!room.gameState) {
+      throw new Error("Cannot record vote: game has not started.");
+    }
+
+    const voter = room.players.get(voterId);
+    if (!voter) {
+      throw new Error("Voter not found in this room.");
+    }
+
+    if (!voter.isAlive) {
+      throw new Error("Dead players cannot vote.");
+    }
+
+    if (this.hasVoted(room, voterId)) {
+      throw new Error("You have already voted in this phase.");
+    }
+
+    room.gameState.votes.set(voterId, SKIP_VOTE_TARGET);
+  }
+
+  /**
    * Checks if a player has already submitted a vote in the current voting phase.
    * Returns true if the voter's ID exists in gameState.votes, false otherwise.
    */
@@ -52,9 +83,15 @@ export class VoteManager {
 
   /**
    * Tallies all votes and determines the elimination outcome.
+   *
+   * Skip vote logic:
+   * - If skip votes are a strict majority (>50% of living players), no one is eliminated.
+   * - Otherwise, skip votes are ignored and the player with the most non-skip votes
+   *   is eliminated (ties still produce no elimination).
+   *
    * Returns a VoteResult containing:
-   * - eliminatedPlayerId: the player with the most votes (null if tie)
-   * - voteCounts: map of targetId -> vote count
+   * - eliminatedPlayerId: the player with the most votes (null if tie or skip majority)
+   * - voteCounts: map of targetId -> vote count (excludes skip votes)
    * - isTie: true if multiple players tied for most votes
    * - tiedPlayers: array of player IDs with the highest vote count (if tie)
    */
@@ -63,15 +100,35 @@ export class VoteManager {
       throw new Error("Cannot tally votes: game has not started.");
     }
 
+    // Count living players for majority calculation
+    const livingPlayerCount = Array.from(room.players.values()).filter(
+      (p) => p.isAlive
+    ).length;
+
+    // Separate skip votes from player votes
+    let skipVoteCount = 0;
     const voteCounts = new Map<string, number>();
 
-    // Count votes for each target
     for (const targetId of room.gameState.votes.values()) {
-      const currentCount = voteCounts.get(targetId) || 0;
-      voteCounts.set(targetId, currentCount + 1);
+      if (targetId === SKIP_VOTE_TARGET) {
+        skipVoteCount++;
+      } else {
+        const currentCount = voteCounts.get(targetId) || 0;
+        voteCounts.set(targetId, currentCount + 1);
+      }
     }
 
-    // If no votes were cast, return empty result
+    // If skip votes are a strict majority, no elimination
+    if (skipVoteCount > livingPlayerCount / 2) {
+      return {
+        eliminatedPlayerId: null,
+        voteCounts,
+        isTie: false,
+        tiedPlayers: [],
+      };
+    }
+
+    // If no non-skip votes were cast, return empty result
     if (voteCounts.size === 0) {
       return {
         eliminatedPlayerId: null,

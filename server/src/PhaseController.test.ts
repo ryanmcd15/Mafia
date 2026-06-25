@@ -34,6 +34,10 @@ function makeGameState(): GameState {
     phaseTimer: null,
     roleAcknowledgements: new Set(),
     narrationCompletes: new Set(),
+    voteHistory: [],
+    accusations: new Map(),
+    accusationResults: null,
+    round: 1,
   };
 }
 
@@ -455,6 +459,44 @@ describe("PhaseController", () => {
     }
   );
 
+  // Feature: mafia-game, Property 34: Killer elimination triggers Civilians Win
+  // Validates: Requirements 13.1
+  it(
+    "Property 34: when the Killer is eliminated, checkWinCondition returns Civilians Win",
+    () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 4, max: 10 }),
+          (numPlayers) => {
+            // Build players and assign roles deterministically
+            const players = Array.from({ length: numPlayers }, (_, i) =>
+              makePlayer(`p${i}`, Role.Civilian, true, i === 0)
+            );
+            assignRolesDeterministic(players);
+
+            // Mark the Killer (index 0) as eliminated
+            players[0].isAlive = false;
+
+            const room = makeRoom(players, GamePhase.Voting);
+            roomsToCleanup.push(room);
+
+            const controller = new PhaseController();
+            const result = controller.checkWinCondition(room);
+
+            // Must return a win condition
+            expect(result).not.toBeNull();
+            // Civilians must be the winner
+            expect(result!.winner).toBe("Civilians");
+            // Reason must mention the Killer being eliminated
+            expect(result!.reason).toContain("Killer");
+            expect(result!.reason).toContain("eliminated");
+          }
+        ),
+        { numRuns: 100 }
+      );
+    }
+  );
+
   // Feature: mafia-game, Property 26 (invariant): phase stays in Morning until narration completes
   // Validates: Requirements 9.9
   it(
@@ -504,6 +546,339 @@ describe("PhaseController", () => {
             }
 
             expect(room.phase).toBe(GamePhase.Discussion);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    }
+  );
+
+  // Feature: mafia-game, Property 24: Night action resolution follows kill-save logic
+  // Validates: Requirements 9.1, 9.3, 9.4, 9.5
+  it(
+    "Property 24: resolveNightActions produces correct outcome for all kill/save combinations",
+    () => {
+      fc.assert(
+        fc.property(
+          // Generate player count (4-10)
+          fc.integer({ min: 4, max: 10 }),
+          // Whether killer submits a target (true) or null (false)
+          fc.boolean(),
+          // Whether medic submits a target (true) or null (false)
+          fc.boolean(),
+          // Whether medic saves the same player the killer targets
+          fc.boolean(),
+          (numPlayers, killerSubmits, medicSubmits, medicSavesSameTarget) => {
+            // Build players and assign roles
+            const players = Array.from({ length: numPlayers }, (_, i) =>
+              makePlayer(`p${i}`, Role.Civilian, true, i === 0)
+            );
+            assignRolesDeterministic(players);
+            const room = makeRoom(players, GamePhase.Morning);
+            roomsToCleanup.push(room);
+
+            const controller = new PhaseController();
+
+            // Identify valid targets for the killer (alive, not self)
+            const killer = players[0];
+            const killerTargets = players.filter(
+              (p) => p.isAlive && p.id !== killer.id
+            );
+
+            // Set up killTarget
+            const killTarget =
+              killerSubmits && killerTargets.length > 0
+                ? killerTargets[0].id
+                : null;
+            room.gameState!.nightActions.killTarget = killTarget;
+
+            // Set up saveTarget based on combinations
+            let saveTarget: string | null = null;
+            if (medicSubmits) {
+              if (killerSubmits && medicSavesSameTarget && killerTargets.length > 0) {
+                // Medic saves the same player the killer targeted
+                saveTarget = killerTargets[0].id;
+              } else {
+                // Medic saves a different player (pick last alive player)
+                const medicTargets = players.filter((p) => p.isAlive);
+                const differentTarget = medicTargets.find(
+                  (p) => p.id !== killTarget
+                );
+                saveTarget = differentTarget ? differentTarget.id : null;
+              }
+            }
+            room.gameState!.nightActions.saveTarget = saveTarget;
+
+            // Resolve night actions
+            const result = controller.resolveNightActions(room);
+
+            // Assert correct outcomes based on the combination
+            if (killTarget === null) {
+              // Req 9.5: No kill target → quiet night, no elimination
+              expect(result.eliminatedPlayerId).toBeNull();
+              expect(result.wasSaved).toBe(false);
+              // All players remain alive
+              for (const p of room.players.values()) {
+                expect(p.isAlive).toBe(true);
+              }
+            } else if (killTarget === saveTarget) {
+              // Req 9.3: Kill and save target are the same → saved
+              expect(result.eliminatedPlayerId).toBeNull();
+              expect(result.wasSaved).toBe(true);
+              // The targeted player is still alive
+              const targetedPlayer = room.players.get(killTarget);
+              expect(targetedPlayer!.isAlive).toBe(true);
+            } else {
+              // Req 9.4: Kill target differs from save target → elimination
+              expect(result.eliminatedPlayerId).toBe(killTarget);
+              expect(result.wasSaved).toBe(false);
+              // The killed player is marked as not alive
+              const killedPlayer = room.players.get(killTarget);
+              expect(killedPlayer!.isAlive).toBe(false);
+            }
+          }
+        ),
+        { numRuns: 100 }
+      );
+    }
+  );
+
+  // Feature: mafia-game, Property 25: Morning narration does not reveal role identities
+  // Validates: Requirements 9.7
+  it(
+    "Property 25: morning narration does not reveal the Killer or Medic identity",
+    () => {
+      // Generator for player names: 3-15 alphabetical chars, filtered to avoid
+      // substrings of static narration text (e.g., "The", "was", "dawn", etc.).
+      const narrationWords = [
+        "the", "night", "passed", "quietly", "no", "one", "was", "harmed",
+        "tense", "shadows", "moved", "through", "town", "but", "when",
+        "morning", "came", "everyone", "survived", "as", "dawn", "broke",
+        "gathered", "square", "found", "eliminated",
+      ];
+      const nameGen = fc
+        .stringMatching(/^[A-Za-z]{3,15}$/)
+        .filter((name) => {
+          const lower = name.toLowerCase();
+          // Exclude names that are substrings of any narration word or vice versa
+          return !narrationWords.some(
+            (w) => lower.includes(w) || w.includes(lower)
+          );
+        });
+
+      fc.assert(
+        fc.property(
+          nameGen,
+          nameGen,
+          (killerName, medicName) => {
+            // Ensure the two names are distinct
+            fc.pre(killerName.toLowerCase() !== medicName.toLowerCase());
+
+            // Build 4 players: Killer, Medic, and 2 Civilians
+            const killerPlayer: Player = {
+              id: "killer1",
+              name: killerName,
+              role: Role.Killer,
+              isAlive: true,
+              isHost: true,
+              isConnected: true,
+              disconnectedAt: null,
+            };
+            const medicPlayer: Player = {
+              id: "medic1",
+              name: medicName,
+              role: Role.Medic,
+              isAlive: true,
+              isHost: false,
+              isConnected: true,
+              disconnectedAt: null,
+            };
+            const civilian1: Player = {
+              id: "civ1",
+              name: "CivilianAlpha",
+              role: Role.Civilian,
+              isAlive: true,
+              isHost: false,
+              isConnected: true,
+              disconnectedAt: null,
+            };
+            const civilian2: Player = {
+              id: "civ2",
+              name: "CivilianBeta",
+              role: Role.Civilian,
+              isAlive: true,
+              isHost: false,
+              isConnected: true,
+              disconnectedAt: null,
+            };
+
+            const controller = new PhaseController();
+
+            // --- Scenario 1: Quiet night (no kill target) ---
+            const room1 = makeRoom(
+              [killerPlayer, medicPlayer, civilian1, civilian2],
+              GamePhase.Morning
+            );
+            roomsToCleanup.push(room1);
+            room1.gameState!.nightActions.killTarget = null;
+            room1.gameState!.nightActions.saveTarget = null;
+
+            const result1 = controller.resolveNightActions(room1);
+            for (const segment of result1.segments) {
+              const lower = segment.toLowerCase();
+              expect(lower).not.toContain(killerName.toLowerCase());
+              expect(lower).not.toContain(medicName.toLowerCase());
+              expect(lower).not.toContain("killer");
+              expect(lower).not.toContain("medic");
+            }
+
+            // --- Scenario 2: Saved (kill == save) ---
+            // Reset players alive state
+            killerPlayer.isAlive = true;
+            medicPlayer.isAlive = true;
+            civilian1.isAlive = true;
+            civilian2.isAlive = true;
+
+            const room2 = makeRoom(
+              [killerPlayer, medicPlayer, civilian1, civilian2],
+              GamePhase.Morning
+            );
+            roomsToCleanup.push(room2);
+            room2.gameState!.nightActions.killTarget = "civ1";
+            room2.gameState!.nightActions.saveTarget = "civ1";
+
+            const result2 = controller.resolveNightActions(room2);
+            for (const segment of result2.segments) {
+              const lower = segment.toLowerCase();
+              expect(lower).not.toContain(killerName.toLowerCase());
+              expect(lower).not.toContain(medicName.toLowerCase());
+              expect(lower).not.toContain("killer");
+              expect(lower).not.toContain("medic");
+            }
+
+            // --- Scenario 3: Elimination (kill != save) ---
+            // Reset players alive state
+            killerPlayer.isAlive = true;
+            medicPlayer.isAlive = true;
+            civilian1.isAlive = true;
+            civilian2.isAlive = true;
+
+            const room3 = makeRoom(
+              [killerPlayer, medicPlayer, civilian1, civilian2],
+              GamePhase.Morning
+            );
+            roomsToCleanup.push(room3);
+            room3.gameState!.nightActions.killTarget = "civ1"; // targets a Civilian
+            room3.gameState!.nightActions.saveTarget = "civ2"; // saves a different player
+
+            const result3 = controller.resolveNightActions(room3);
+            for (const segment of result3.segments) {
+              const lower = segment.toLowerCase();
+              // Killer's name must not appear
+              expect(lower).not.toContain(killerName.toLowerCase());
+              // Medic's name must not appear
+              expect(lower).not.toContain(medicName.toLowerCase());
+              // Role identifiers must not appear
+              expect(lower).not.toContain("killer");
+              expect(lower).not.toContain("medic");
+            }
+            // The eliminated civilian's name IS allowed to appear (correct behavior)
+          }
+        ),
+        { numRuns: 100 }
+      );
+    }
+  );
+
+  // Feature: mafia-game, Property 35: Killer dominance triggers Killer Wins
+  // Validates: Requirements 14.1
+  it(
+    "Property 35: when living Killers >= living non-Killers, checkWinCondition returns Killer Wins",
+    () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 4, max: 10 }),
+          (numPlayers) => {
+            // Build players and assign roles deterministically
+            // index 0 = Killer, index 1 = Medic, rest = Civilians
+            const players = Array.from({ length: numPlayers }, (_, i) =>
+              makePlayer(`p${i}`, Role.Civilian, true, i === 0)
+            );
+            assignRolesDeterministic(players);
+
+            // Keep the Killer (index 0) alive.
+            // Eliminate enough non-Killer players so that living Killers (1) >= living non-Killers.
+            // With 1 Killer, we need living non-Killers <= 1.
+            // Non-Killers are indices 1..(numPlayers-1), total = numPlayers - 1.
+            // We must eliminate at least (numPlayers - 1) - 1 = numPlayers - 2 non-Killers,
+            // leaving at most 1 non-Killer alive.
+            const nonKillerPlayers = players.slice(1); // all non-Killer players
+            const numToEliminate = nonKillerPlayers.length - 1; // leave exactly 1 alive
+
+            for (let i = 0; i < numToEliminate; i++) {
+              nonKillerPlayers[i].isAlive = false;
+            }
+
+            const room = makeRoom(players, GamePhase.Voting);
+            roomsToCleanup.push(room);
+
+            const controller = new PhaseController();
+            const result = controller.checkWinCondition(room);
+
+            // Must return a win condition
+            expect(result).not.toBeNull();
+            // Killer must be the winner
+            expect(result!.winner).toBe("Killer");
+          }
+        ),
+        { numRuns: 100 }
+      );
+    }
+  );
+
+  // Feature: mafia-game, Property 13: Role assignment produces exactly 1 Killer, 1 Medic, and remaining Civilians
+  // Validates: Requirements 5.1
+  it(
+    "Property 13: role assignment produces exactly 1 Killer, 1 Medic, and N-2 Civilians",
+    () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 4, max: 10 }),
+          (numPlayers) => {
+            // Build players with role: null to verify assignRoles assigns them
+            const players: Player[] = Array.from({ length: numPlayers }, (_, i) => ({
+              id: `p${i}`,
+              name: `Player_${i}`,
+              role: null,
+              isAlive: true,
+              isHost: i === 0,
+              isConnected: true,
+              disconnectedAt: null,
+            }));
+            const room = makeRoom(players, GamePhase.RoleReveal);
+            roomsToCleanup.push(room);
+
+            const controller = new PhaseController();
+            controller.assignRoles(room);
+
+            const assignedPlayers = Array.from(room.players.values());
+
+            // Every player must have a non-null role
+            for (const p of assignedPlayers) {
+              expect(p.role).not.toBeNull();
+            }
+
+            // Exactly 1 Killer
+            const killers = assignedPlayers.filter((p) => p.role === Role.Killer);
+            expect(killers.length).toBe(1);
+
+            // Exactly 1 Medic
+            const medics = assignedPlayers.filter((p) => p.role === Role.Medic);
+            expect(medics.length).toBe(1);
+
+            // Exactly N-2 Civilians
+            const civilians = assignedPlayers.filter((p) => p.role === Role.Civilian);
+            expect(civilians.length).toBe(numPlayers - 2);
           }
         ),
         { numRuns: 100 }

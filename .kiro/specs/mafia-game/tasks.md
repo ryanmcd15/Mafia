@@ -101,7 +101,7 @@ Implement a real-time, mobile-first social deduction game using Node.js + Socket
     - Implement `assignRoles(room)` — shuffle player array, assign exactly 1 Killer, 1 Medic, rest Civilians; store on each Player object
     - _Requirements: 5.1, 5.2_
 
-  - [ ]* 4.2 Write property tests for PhaseController — Property 13 (role assignment produces exactly 1 Killer, 1 Medic, N-2 Civilians)
+  - [x] 4.2 Write property tests for PhaseController — Property 13 (role assignment produces exactly 1 Killer, 1 Medic, N-2 Civilians)
     - **Property 13: Role assignment produces exactly 1 Killer, 1 Medic, and remaining Civilians**
     - **Validates: Requirements 5.1**
     - Use `fc.integer({ min: 4, max: 10 })` as player count generator; assert role counts match invariant for 100+ runs
@@ -112,12 +112,12 @@ Implement a real-time, mobile-first social deduction game using Node.js + Socket
     - Narration segments must not reveal Killer or Medic identity
     - _Requirements: 9.1, 9.3, 9.4, 9.5, 9.7_
 
-  - [ ]* 4.4 Write property tests for PhaseController — Property 24 (night action resolution follows kill-save logic)
+  - [x] 4.4 Write property tests for PhaseController — Property 24 (night action resolution follows kill-save logic)
     - **Property 24: Night action resolution follows kill-save logic**
     - **Validates: Requirements 9.1, 9.3, 9.4, 9.5**
     - Generate all combinations of `killTarget` (null or player ID) and `saveTarget` (null or player ID); assert correct outcome for each combination
 
-  - [ ]* 4.5 Write property tests for PhaseController — Property 25 (morning narration does not reveal role identities)
+  - [x] 4.5 Write property tests for PhaseController — Property 25 (morning narration does not reveal role identities)
     - **Property 25: Morning narration does not reveal role identities**
     - **Validates: Requirements 9.7**
     - Generate random player names for Killer and Medic; assert no narration segment contains those names or any role identifier
@@ -126,12 +126,12 @@ Implement a real-time, mobile-first social deduction game using Node.js + Socket
     - Implement `checkWinCondition(room)` — after any elimination, check: if eliminated player is Killer → "Civilians Win"; if living Killers ≥ living non-Killers → "Killer Wins"; else null
     - _Requirements: 13.1, 14.1_
 
-  - [ ]* 4.7 Write property tests for PhaseController — Property 34 (Killer elimination triggers Civilians Win)
+  - [x] 4.7 Write property tests for PhaseController — Property 34 (Killer elimination triggers Civilians Win)
     - **Property 34: Killer elimination triggers Civilians Win**
     - **Validates: Requirements 13.1**
     - Generate game states where the Killer is the eliminated player; assert `checkWinCondition` returns "Civilians Win"
 
-  - [ ]* 4.8 Write property tests for PhaseController — Property 35 (Killer dominance triggers Killer Wins)
+  - [x] 4.8 Write property tests for PhaseController — Property 35 (Killer dominance triggers Killer Wins)
     - **Property 35: Killer dominance triggers Killer Wins**
     - **Validates: Requirements 14.1**
     - Generate game states where living Killers ≥ living non-Killers; assert `checkWinCondition` returns "Killer Wins"
@@ -236,15 +236,15 @@ Implement a real-time, mobile-first social deduction game using Node.js + Socket
 - [x] 7. Checkpoint — run full server test suite
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 8. Implement React client — core infrastructure
-  - [ ] 8.1 Scaffold React app in `client/` with Vite, set up global dark theme CSS and mobile-first base styles
+- [x] 8. Implement React client — core infrastructure
+  - [x] 8.1 Scaffold React app in `client/` with Vite, set up global dark theme CSS and mobile-first base styles
     - Create `client/index.html`, `client/src/main.tsx`, `client/src/App.tsx`
     - Implement CSS custom properties for dark theme (background `#1a1a1a`, text `#f0f0f0`, accent colours)
     - Set `min-height: 100vh`, `box-sizing: border-box`, `touch-action: manipulation` on root
     - Ensure no horizontal scrolling at 320px viewport width
     - _Requirements: 17.1, 17.2, 17.4_
 
-  - [ ] 8.2 Implement Socket.io client wrapper and global state in `client/src/socket.ts` and `client/src/store.ts`
+  - [x] 8.2 Implement Socket.io client wrapper and global state in `client/src/socket.ts` and `client/src/store.ts`
     - Create a singleton Socket.io-client instance with auto-reconnect and exponential backoff (1s, 2s, 4s, 8s, max 15s)
     - Display "Connection lost" modal on disconnect; redirect to home after 60s
     - Implement React context/store holding: `roomCode`, `phase`, `myPlayer`, `players`, `role`, `error`
@@ -252,65 +252,65 @@ Implement a real-time, mobile-first social deduction game using Node.js + Socket
     - Never compute game logic locally; only store server-provided state
     - _Requirements: 16.1, 16.3, 16.4, 16.7_
 
-- [ ] 9. Implement React client — Lobby and Room views
-  - [ ] 9.1 Implement `HomeView` component — create and join room forms
+- [x] 9. Implement React client — Lobby and Room views
+  - [x] 9.1 Implement `HomeView` component — create and join room forms
     - Name input with inline validation error (empty / too long)
     - Room code input with inline validation error (not found / invalid format)
     - "Create Room" and "Join Room" buttons; minimum 44×44px touch targets
     - Emit `createRoom` / `joinRoom` on submit; display server error via toast if rejected
     - _Requirements: 1.1, 1.4, 2.1, 2.3, 17.3_
 
-  - [ ] 9.2 Implement `LobbyView` component
+  - [x] 9.2 Implement `LobbyView` component
     - Display Room_Code prominently, player list with host indicator (crown icon or "(Host)" label)
     - Host sees "Start Game" button (enabled ≥4 players, disabled with helper text <4 players); non-host players do not see button
     - Update player list reactively on `roomUpdated` without page refresh
     - All interactive controls ≥44×44px
     - _Requirements: 3.1, 3.3, 3.4, 3.5_
 
-- [ ] 10. Implement React client — Game phase views
-  - [ ] 10.1 Implement `RoleRevealView` component
+- [x] 10. Implement React client — Game phase views
+  - [x] 10.1 Implement `RoleRevealView` component
     - Full-screen card showing role name, win condition, and night action description
     - "Got it" button (≥44×44px); emit `roleAcknowledged` on press
     - Do not display any other player's role
     - _Requirements: 5.3, 5.4, 5.5_
 
-  - [ ] 10.2 Implement `NightView` component with role-specific sub-views
+  - [x] 10.2 Implement `NightView` component with role-specific sub-views
     - Killer sub-view: list of living players excluding self; each row is a selectable target (≥44×44px); "Submit Kill" button; emit `submitKill`
     - Medic sub-view: list of living players including self; each row is a selectable target (≥44×44px); "Submit Save" button; emit `submitSave`
     - Civilian sub-view: cinematic sleeping screen with atmospheric text ("Night falls… everyone is asleep.")
     - _Requirements: 6.1, 7.1, 8.1_
 
-  - [ ] 10.3 Implement `MorningView` component
+  - [x] 10.3 Implement `MorningView` component
     - Display narrative segments sequentially, 1500ms delay between each
     - Begin immediately on receipt of `morningNarration` event
     - Emit `narrationComplete` after displaying final segment
     - _Requirements: 9.6, 9.8_
 
-  - [ ] 10.4 Implement `DiscussionView` component
+  - [x] 10.4 Implement `DiscussionView` component
     - Countdown timer in MM:SS format updating every second
     - List of living players by name
     - Host sees "Skip to Vote" button (≥44×44px); emit `skipDiscussion` on press
     - No chat input or message feed
     - _Requirements: 10.2, 10.4, 10.5_
 
-  - [ ]* 10.5 Write unit tests for `DiscussionView` timer formatting — Property 27
+  - [x] 10.5 Write unit tests for `DiscussionView` timer formatting — Property 27
     - **Property 27: Discussion timer format is correct**
     - **Validates: Requirements 10.2**
     - Use fast-check `fc.integer({ min: 0, max: 600 })`; assert displayed string matches `MM:SS` format with correct values and zero-padding
 
-  - [ ] 10.6 Implement `VotingView` component
+  - [x] 10.6 Implement `VotingView` component
     - List of living players as selectable vote targets (≥44×44px rows)
     - "Submit Vote" button; emit `submitVote`; show confirmation on submission
     - Display vote countdown timer (MM:SS)
     - _Requirements: 11.1_
 
-  - [ ] 10.7 Implement `ResultsView` component
+  - [x] 10.7 Implement `ResultsView` component
     - Full-screen reveal of eliminated player's name and role
     - Display within 2 seconds of `playerEliminated` event
     - Auto-dismiss after brief display
     - _Requirements: 12.3, 12.4_
 
-  - [ ] 10.8 Implement `GameOverView` component
+  - [x] 10.8 Implement `GameOverView` component
     - Winner announcement banner ("Civilians Win" / "Killer Wins")
     - Full list of all players with their roles revealed
     - Host sees "Play Again" button (≥44×44px); emit `replayGame` on press
@@ -318,36 +318,36 @@ Implement a real-time, mobile-first social deduction game using Node.js + Socket
     - Render within 3 seconds of `gameOver` event
     - _Requirements: 13.2, 13.3, 14.2, 14.3_
 
-  - [ ] 10.9 Implement `SpectatorView` component
+  - [x] 10.9 Implement `SpectatorView` component
     - Persistent "ELIMINATED — You are spectating" banner at top of screen
     - Passthrough display of public game info: current phase, living players, narration text, vote results
     - All action buttons disabled / absent
     - Transitions to `GameOverView` on `gameOver` event
     - _Requirements: 19.1, 19.2, 19.3, 19.4, 19.5_
 
-- [ ] 11. Wire client phase routing
-  - [ ] 11.1 Implement phase router in `App.tsx` — render correct view based on `phase` in store
+- [x] 11. Wire client phase routing
+  - [x] 11.1 Implement phase router in `App.tsx` — render correct view based on `phase` in store
     - Map each `GamePhase` enum value to its corresponding view component
     - Handle eliminated player: if `myPlayer.isAlive === false` and phase is not GameOver, render `SpectatorView`
     - Handle error toast: subscribe to `error` events; display toast notification for 3 seconds; never silently fail
     - _Requirements: 16.2, 19.1_
 
-- [ ] 12. Checkpoint — end-to-end client + server smoke test
+- [x] 12. Checkpoint — end-to-end client + server smoke test
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 13. Implement reconnection and error handling
-  - [ ] 13.1 Implement player reconnection flow on the server
+- [x] 13. Implement reconnection and error handling
+  - [x] 13.1 Implement player reconnection flow on the server
     - On `joinRoom` with matching name and room code for a disconnected player within 60s: cancel removal timer, restore socket, emit `roomUpdated` and `phaseChanged` with current state
     - On `joinRoom` after 60s expiry: treat as a new join attempt (may fail if game in progress)
     - _Requirements: 16.3, 16.4, 16.5_
 
-  - [ ] 13.2 Implement client reconnection UI
+  - [x] 13.2 Implement client reconnection UI
     - On socket `disconnect` event: display "Connection lost" modal with spinner and "Retry" button
     - On socket `reconnect` event: hide modal; client state is refreshed via `phaseChanged` from server
     - After 60s without reconnection: display "Session expired" and redirect to home
     - _Requirements: 16.3, 16.4_
 
-- [ ] 14. Final checkpoint — full test suite
+- [x] 14. Final checkpoint — full test suite
   - Ensure all unit, property, and integration tests pass, ask the user if questions arise.
 
 ## Notes
