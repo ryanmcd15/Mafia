@@ -83,6 +83,18 @@ function advanceToMorning(room: Room, roomCode: string): void {
     wasSaved: narrationResult.wasSaved,
   });
 
+  // Privately notify the Medic if their save was successful
+  if (narrationResult.wasSaved) {
+    const medic = Array.from(room.players.values()).find(
+      (p) => p.role === Role.Medic && p.isAlive && p.isConnected
+    );
+    if (medic) {
+      io.to(medic.id).emit("medicFeedback", {
+        message: "Your protection was needed last night.",
+      });
+    }
+  }
+
   // Emit phaseChanged
   io.to(roomCode).emit("phaseChanged", {
     phase: room.phase,

@@ -65,4 +65,5 @@ export interface GameStore {
   voteHistory: Array<{ round: number; votes: Record<string, string> }>;
   accusationResults: Record<string, number> | null;
   round: number;
+  medicFeedback: string | null;
 }

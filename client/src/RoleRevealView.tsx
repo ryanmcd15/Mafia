@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useGameStore } from "./store";
 import socket from "./socket";
 import { Role } from "./types";
@@ -17,9 +17,11 @@ const NIGHT_ACTIONS: Record<Role, string> = {
 
 export function RoleRevealView(): React.JSX.Element {
   const { role, roomCode } = useGameStore();
+  const [acknowledged, setAcknowledged] = useState(false);
 
   function handleAcknowledge() {
     socket.emit("roleAcknowledged", { roomCode });
+    setAcknowledged(true);
   }
 
   if (!role) {
@@ -46,13 +48,19 @@ export function RoleRevealView(): React.JSX.Element {
           <p style={styles.sectionText}>{NIGHT_ACTIONS[role]}</p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleAcknowledge}
-          style={styles.button}
-        >
-          Got it
-        </button>
+        {acknowledged ? (
+          <p style={{ marginTop: "16px", fontSize: "14px", color: "var(--text-secondary)", fontStyle: "italic" }}>
+            Waiting for other players...
+          </p>
+        ) : (
+          <button
+            type="button"
+            onClick={handleAcknowledge}
+            style={styles.button}
+          >
+            Got it
+          </button>
+        )}
       </div>
     </div>
   );

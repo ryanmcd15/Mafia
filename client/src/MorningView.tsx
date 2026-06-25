@@ -5,7 +5,7 @@ import socket from "./socket";
 const SEGMENT_DELAY_MS = 5500;
 
 export function MorningView(): React.JSX.Element {
-  const { narration, roomCode } = useGameStore();
+  const { narration, roomCode, medicFeedback } = useGameStore();
   const segments = narration?.segments ?? [];
   const [visibleCount, setVisibleCount] = useState(0);
   const [flashType, setFlashType] = useState<"kill" | "save" | null>(null);
@@ -81,6 +81,30 @@ export function MorningView(): React.JSX.Element {
           {segment}
         </p>
       ))}
+
+      {/* Private medic feedback whisper */}
+      {medicFeedback && visibleCount >= segments.length && (
+        <p
+          style={{
+            fontSize: "0.95rem",
+            color: "var(--success, #2ed573)",
+            fontStyle: "italic",
+            marginTop: "24px",
+            padding: "12px 20px",
+            borderRadius: "8px",
+            backgroundColor: "rgba(46, 213, 115, 0.1)",
+            border: "1px solid rgba(46, 213, 115, 0.3)",
+            animation: "fadeIn 0.6s ease-in forwards",
+            opacity: 0,
+            maxWidth: "320px",
+            textAlign: "center",
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
+          🩺 {medicFeedback}
+        </p>
+      )}
       <style>{keyframes}</style>
     </div>
   );

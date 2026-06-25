@@ -29,6 +29,7 @@ type Action =
   | { type: "PLAYER_ELIMINATED"; players: Player[] }
   | { type: "GAME_OVER"; phase: GamePhase; winCondition: WinCondition; players: Player[] }
   | { type: "ACCUSATION_RESULTS"; results: Record<string, number> }
+  | { type: "MEDIC_FEEDBACK"; message: string }
   | { type: "ERROR"; error: string }
   | { type: "CLEAR_ERROR" }
   | { type: "CONNECTED" }
@@ -50,6 +51,7 @@ const initialState: GameStore = {
   voteHistory: [],
   accusationResults: null,
   round: 1,
+  medicFeedback: null,
 };
 
 function gameReducer(state: GameStore, action: Action): GameStore {
@@ -77,6 +79,7 @@ function gameReducer(state: GameStore, action: Action): GameStore {
         voteHistory: action.voteHistory ?? state.voteHistory,
         accusationResults: null, // Clear accusations on phase change
         round: action.round ?? state.round,
+        medicFeedback: null, // Clear medic feedback on phase change
       };
     case "MORNING_NARRATION":
       return { ...state, narration: action.narration };
@@ -102,6 +105,8 @@ function gameReducer(state: GameStore, action: Action): GameStore {
       };
     case "ACCUSATION_RESULTS":
       return { ...state, accusationResults: action.results };
+    case "MEDIC_FEEDBACK":
+      return { ...state, medicFeedback: action.message };
     case "ERROR":
       return { ...state, error: action.error };
     case "CLEAR_ERROR":
@@ -216,6 +221,10 @@ export function GameProvider({
       dispatch({ type: "ACCUSATION_RESULTS", results: data.results });
     }
 
+    function onMedicFeedback(data: { message: string }) {
+      dispatch({ type: "MEDIC_FEEDBACK", message: data.message });
+    }
+
     function onConnect() {
       dispatch({ type: "CONNECTED" });
       if (disconnectTimerRef.current) {
@@ -247,6 +256,7 @@ export function GameProvider({
     socket.on("playerEliminated", onPlayerEliminated);
     socket.on("gameOver", onGameOver);
     socket.on("accusationResults", onAccusationResults);
+    socket.on("medicFeedback", onMedicFeedback);
     socket.on("error", onError);
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
@@ -262,6 +272,7 @@ export function GameProvider({
       socket.off("playerEliminated", onPlayerEliminated);
       socket.off("gameOver", onGameOver);
       socket.off("accusationResults", onAccusationResults);
+      socket.off("medicFeedback", onMedicFeedback);
       socket.off("error", onError);
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);

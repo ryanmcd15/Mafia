@@ -93,9 +93,9 @@ export class PhaseController {
       const variants = [
         ["The night was tense.", "Shadows moved through the town… but when morning came, everyone survived."],
         ["Something dark stirred in the night.", "Yet by some miracle, no one was lost."],
-        ["The danger was real, but someone watched over the town.", "All souls accounted for at dawn."],
-        ["A close call in the dead of night.", "But fate was kind — everyone lives to see another day."],
-        ["Evil crept close… but was turned away.", "The town breathes a sigh of relief."],
+        ["The danger was real, but someone watched over the town.", "Every soul accounted for at dawn."],
+        ["A narrow escape in the dead of night.", "Fate was kind — everyone lives to see another day."],
+        ["Evil crept nearby… but was turned away.", "The town breathes a sigh of relief."],
       ];
       const segments = variants[Math.floor(Math.random() * variants.length)];
       return {
