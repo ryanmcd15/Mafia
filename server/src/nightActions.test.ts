@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fc from "fast-check";
 import { GameManager } from "./GameManager.js";
 import { PhaseController } from "./PhaseController.js";
-import { GamePhase, Role, Room } from "./types.js";
+import { GamePhase, Role, Room } from "./games/mafia/types.js";
 
 /**
  * Helper: creates a room with `playerCount` players (4-10), starts the game,

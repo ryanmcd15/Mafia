@@ -6,15 +6,15 @@ import {
   Role,
   Room,
   WinCondition,
-} from "./types.js";
+} from "./games/mafia/types.js";
 
 // Phase timer defaults (in milliseconds)
 const PHASE_TIMER_DEFAULTS: Partial<Record<GamePhase, number>> = {
   [GamePhase.Night]: 90_000,
   [GamePhase.Discussion]: 120_000,
   [GamePhase.Voting]: 60_000,
-  [GamePhase.RoleReveal]: 60_000,
-  [GamePhase.Morning]: 30_000,
+  [GamePhase.RoleReveal]: 20_000,
+  [GamePhase.Morning]: 15_000,
 };
 
 // Valid range for Discussion timer (in milliseconds)

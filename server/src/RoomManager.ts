@@ -1,4 +1,4 @@
-import { GamePhase, Player, Room } from "./types.js";
+import { PlatformPhase, PlatformPlayer, PlatformRoom } from "./types.js";
 
 const ROOM_CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const ROOM_CODE_LENGTH = 6;
@@ -21,7 +21,7 @@ function getNextColor(): string {
 }
 
 export class RoomManager {
-  private rooms: Map<string, Room> = new Map();
+  private rooms: Map<string, PlatformRoom> = new Map();
 
   /**
    * Generates a random 6-character uppercase alphanumeric room code.
@@ -48,7 +48,7 @@ export class RoomManager {
    * Validates hostName (1–32 chars), generates a unique room code,
    * and stores the room in the internal map.
    */
-  createRoom(hostName: string, socketId: string): Room {
+  createRoom(hostName: string, socketId: string): PlatformRoom {
     if (!hostName || hostName.length < 1 || hostName.length > MAX_HOST_NAME_LENGTH) {
       throw new Error(
         `Host name must be between 1 and ${MAX_HOST_NAME_LENGTH} characters.`
@@ -60,24 +60,21 @@ export class RoomManager {
       throw new Error("Service temporarily unavailable. Please try again.");
     }
 
-    const host: Player = {
+    const host: PlatformPlayer = {
       id: socketId,
       name: hostName,
-      role: null,
-      isAlive: true,
       isHost: true,
       isConnected: true,
       disconnectedAt: null,
-      isReady: false,
       color: getNextColor(),
     };
 
-    const room: Room = {
+    const room: PlatformRoom = {
       roomCode,
       hostId: socketId,
       players: new Map([[socketId, host]]),
-      phase: GamePhase.Lobby,
-      gameState: null,
+      platformPhase: PlatformPhase.Lobby,
+      activeGameId: null,
       createdAt: new Date(),
     };
 
@@ -90,14 +87,14 @@ export class RoomManager {
    * Validates name (1–20 chars), checks phase is Lobby,
    * enforces max 10 players, and ensures name uniqueness.
    */
-  addPlayer(room: Room, playerName: string, socketId: string): Player {
+  addPlayer(room: PlatformRoom, playerName: string, socketId: string): PlatformPlayer {
     if (!playerName || playerName.length < 1 || playerName.length > MAX_PLAYER_NAME_LENGTH) {
       throw new Error(
         `Player name must be between 1 and ${MAX_PLAYER_NAME_LENGTH} characters.`
       );
     }
 
-    if (room.phase !== GamePhase.Lobby) {
+    if (room.platformPhase !== PlatformPhase.Lobby) {
       throw new Error("Cannot join a game that is already in progress.");
     }
 
@@ -109,15 +106,12 @@ export class RoomManager {
       throw new Error(`The name "${playerName}" is already taken in this room.`);
     }
 
-    const player: Player = {
+    const player: PlatformPlayer = {
       id: socketId,
       name: playerName,
-      role: null,
-      isAlive: true,
       isHost: false,
       isConnected: true,
       disconnectedAt: null,
-      isReady: false,
       color: getNextColor(),
     };
 
@@ -129,7 +123,7 @@ export class RoomManager {
    * Removes a player from the room by their socket ID.
    * If the room becomes empty, removes it from the store.
    */
-  removePlayer(room: Room, playerId: string): void {
+  removePlayer(room: PlatformRoom, playerId: string): void {
     room.players.delete(playerId);
 
     if (room.players.size === 0) {
@@ -141,7 +135,7 @@ export class RoomManager {
    * Case-sensitive check — returns true only if no current player
    * in the room has the exact same name.
    */
-  isNameUnique(room: Room, playerName: string): boolean {
+  isNameUnique(room: PlatformRoom, playerName: string): boolean {
     for (const player of room.players.values()) {
       if (player.name === playerName) {
         return false;
@@ -155,11 +149,11 @@ export class RoomManager {
    * Sets the previous host's isHost to false.
    * Does nothing if no connected non-host players exist.
    */
-  transferHost(room: Room): void {
+  transferHost(room: PlatformRoom): void {
     const currentHost = room.players.get(room.hostId);
 
     // Find the next connected player that is not the current host
-    let nextHost: Player | undefined;
+    let nextHost: PlatformPlayer | undefined;
     for (const player of room.players.values()) {
       if (player.id !== room.hostId && player.isConnected) {
         nextHost = player;
@@ -185,7 +179,7 @@ export class RoomManager {
   /**
    * Returns the room with the given code, or null if not found.
    */
-  getRoom(roomCode: string): Room | null {
+  getRoom(roomCode: string): PlatformRoom | null {
     return this.rooms.get(roomCode) ?? null;
   }
 }

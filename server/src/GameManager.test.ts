@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fc from "fast-check";
 import { GameManager } from "./GameManager.js";
-import { GamePhase, Role } from "./types.js";
+import { GamePhase, Role } from "./games/mafia/types.js";
 
 describe("GameManager", () => {
   // Feature: mafia-game, Property 8: Start button availability depends on player count

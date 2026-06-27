@@ -1,4 +1,4 @@
-import { Room, VoteResult } from "./types.js";
+import { Room, VoteResult } from "./games/mafia/types.js";
 
 /** Sentinel target ID representing a "skip" vote (no elimination) */
 export const SKIP_VOTE_TARGET = "__SKIP__";

@@ -3,8 +3,8 @@ import * as fc from "fast-check";
 import { RoomManager } from "./RoomManager.js";
 
 describe("RoomManager", () => {
-  // Feature: mafia-game, Property 1: Valid room creation produces valid room code
-  // Validates: Requirements 1.1, 1.3
+  // Feature: party-games-platform, Property 1: Room creation produces valid room for valid host names
+  // Validates: Requirements 1.2
   it("Property 1: valid room creation produces valid room code and designates creator as host", () => {
     fc.assert(
       fc.property(
@@ -27,7 +27,7 @@ describe("RoomManager", () => {
     );
   });
 
-  // Feature: mafia-game, Property 2: Invalid room creator names are rejected
+  // Feature: party-games-platform, Property 2 (supplemental): Invalid room creator names are rejected
   // Validates: Requirements 1.4
   it("Property 2: invalid room creator names are rejected with descriptive error", () => {
     fc.assert(
@@ -57,9 +57,9 @@ describe("RoomManager", () => {
     );
   });
 
-  // Feature: mafia-game, Property 3: Valid join adds player to room
-  // Validates: Requirements 2.1, 2.7
-  it("Property 3: valid join adds player to room", () => {
+  // Feature: party-games-platform, Property 2: Room joining succeeds for valid player names
+  // Validates: Requirements 1.3
+  it("Property 2: valid join adds player to room", () => {
     fc.assert(
       fc.property(
         fc.string({ minLength: 1, maxLength: 32 }), // Host name
@@ -70,7 +70,13 @@ describe("RoomManager", () => {
           { minLength: 10, maxLength: 10 }
         ),
         fc.integer({ min: 0, max: 8 }), // Number of extra players beyond host
-        (hostName, names, numExtraPlayers) => {
+        (hostName, rawNames, numExtraPlayers) => {
+          // Filter out names that match the host name (case-insensitive) to avoid duplicates
+          const names = rawNames.filter(
+            (n) => n.toLowerCase() !== hostName.toLowerCase()
+          );
+          // If not enough unique names remain after filtering, skip this test case
+          if (names.length < numExtraPlayers + 1) return;
           const manager = new RoomManager();
 
           // Create room with host
@@ -106,7 +112,7 @@ describe("RoomManager", () => {
     );
   });
 
-  // Feature: mafia-game, Property 5: Nonexistent room codes are rejected
+  // Feature: party-games-platform, Property 5 (supplemental): Nonexistent room codes are rejected
   // Validates: Requirements 2.2
   it("Property 5: nonexistent room codes are rejected", () => {
     fc.assert(
@@ -132,9 +138,9 @@ describe("RoomManager", () => {
     );
   });
 
-  // Feature: mafia-game, Property 6: Duplicate names in room are rejected
-  // Validates: Requirements 2.7
-  it("Property 6: duplicate names in room are rejected and room state is not modified", () => {
+  // Feature: party-games-platform, Property 3: Duplicate name rejection
+  // Validates: Requirements 1.7
+  it("Property 3: duplicate names in room are rejected and room state is not modified", () => {
     fc.assert(
       fc.property(
         fc.string({ minLength: 1, maxLength: 20 }), // player name X
@@ -169,7 +175,7 @@ describe("RoomManager", () => {
     );
   });
 
-  // Feature: mafia-game, Property 9: Host disconnect in Lobby transfers host
+  // Feature: party-games-platform, Property 9 (supplemental): Host disconnect in Lobby transfers host
   // Validates: Requirements 3.6
   it("Property 9: host disconnect in Lobby transfers host to a different connected player", () => {
     fc.assert(
@@ -224,7 +230,7 @@ describe("RoomManager", () => {
     );
   });
 
-  // Feature: mafia-game, Property 4: Invalid join names are rejected
+  // Feature: party-games-platform, Property 4 (supplemental): Invalid join names are rejected
   // Validates: Requirements 2.3
   it("Property 4: invalid join names are rejected with descriptive error", () => {
     fc.assert(

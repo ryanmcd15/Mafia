@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import * as fc from "fast-check";
 import { VoteManager } from "./VoteManager.js";
-import { Room, GamePhase, Role, GameState, Player } from "./types.js";
+import { Room, GamePhase, Role, GameState, Player } from "./games/mafia/types.js";
 
 // ---------------------------------------------------------------------------
 // Helpers

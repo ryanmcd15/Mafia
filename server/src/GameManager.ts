@@ -1,4 +1,4 @@
-import { GamePhase, GameState, Room } from "./types.js";
+import { GamePhase, GameState, Room } from "./games/mafia/types.js";
 import { RoomManager } from "./RoomManager.js";
 import { VoteManager } from "./VoteManager.js";
 import { PhaseController } from "./PhaseController.js";
@@ -37,7 +37,11 @@ export class GameManager {
     playerName: string,
     socketId: string
   ): { roomCode: string; hostId: string } {
-    const room = this.roomManager.createRoom(playerName, socketId);
+    const room = this.roomManager.createRoom(playerName, socketId) as any;
+    // Bridge PlatformRoom to legacy Room: add 'phase' field mapped from platformPhase
+    if (room.platformPhase !== undefined && room.phase === undefined) {
+      room.phase = GamePhase.Lobby;
+    }
     this.playerRoomIndex.set(socketId, room.roomCode);
     return { roomCode: room.roomCode, hostId: socketId };
   }
@@ -48,13 +52,17 @@ export class GameManager {
    * Requirements: 2.1–2.7
    */
   joinRoom(roomCode: string, playerName: string, socketId: string): Room {
-    const room = this.roomManager.getRoom(roomCode);
+    const room = this.roomManager.getRoom(roomCode) as any;
     if (!room) {
       throw new Error("Room not found.");
     }
 
     this.roomManager.addPlayer(room, playerName, socketId);
     this.playerRoomIndex.set(socketId, roomCode);
+    // Bridge PlatformRoom to legacy Room: ensure 'phase' field exists
+    if (room.platformPhase !== undefined && room.phase === undefined) {
+      room.phase = GamePhase.Lobby;
+    }
     return room;
   }
 
@@ -65,9 +73,14 @@ export class GameManager {
    * Requirements: 4.1–4.4
    */
   startGame(roomCode: string, requesterId: string): Room {
-    const room = this.roomManager.getRoom(roomCode);
+    const room = this.roomManager.getRoom(roomCode) as any;
     if (!room) {
       throw new Error("Room not found.");
+    }
+
+    // Bridge PlatformRoom to legacy Room: ensure 'phase' field exists
+    if (room.platformPhase !== undefined && room.phase === undefined) {
+      room.phase = GamePhase.Lobby;
     }
 
     if (room.hostId !== requesterId) {
@@ -105,6 +118,13 @@ export class GameManager {
     };
     room.gameState = gameState;
 
+    // Initialize mafia-specific player properties on PlatformPlayer objects
+    for (const player of room.players.values()) {
+      (player as any).isAlive = true;
+      (player as any).role = null;
+      (player as any).isReady = false;
+    }
+
     // Assign roles
     this.phaseController.assignRoles(room);
 
@@ -118,7 +138,13 @@ export class GameManager {
    * Returns the room with the given code, or null if not found.
    */
   getRoom(roomCode: string): Room | null {
-    return this.roomManager.getRoom(roomCode);
+    const room = this.roomManager.getRoom(roomCode) as any;
+    if (!room) return null;
+    // Bridge PlatformRoom to legacy Room: ensure 'phase' field exists
+    if (room.platformPhase !== undefined && room.phase === undefined) {
+      room.phase = GamePhase.Lobby;
+    }
+    return room;
   }
 
   /**
@@ -133,9 +159,14 @@ export class GameManager {
       return;
     }
 
-    const room = this.roomManager.getRoom(roomCode);
+    const room = this.roomManager.getRoom(roomCode) as any;
     if (!room) {
       return;
+    }
+
+    // Bridge PlatformRoom to legacy Room: ensure 'phase' field exists
+    if (room.platformPhase !== undefined && room.phase === undefined) {
+      room.phase = GamePhase.Lobby;
     }
 
     const player = room.players.get(playerId);
@@ -173,9 +204,14 @@ export class GameManager {
     playerName: string,
     socketId: string
   ): Room {
-    const room = this.roomManager.getRoom(roomCode);
+    const room = this.roomManager.getRoom(roomCode) as any;
     if (!room) {
       throw new Error("Room not found.");
+    }
+
+    // Bridge PlatformRoom to legacy Room: ensure 'phase' field exists
+    if (room.platformPhase !== undefined && room.phase === undefined) {
+      room.phase = GamePhase.Lobby;
     }
 
     // Find the player by name (case-sensitive)

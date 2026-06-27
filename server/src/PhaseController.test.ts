@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import * as fc from "fast-check";
 import { PhaseController } from "./PhaseController.js";
-import { GamePhase, GameState, Player, Role, Room } from "./types.js";
+import { GamePhase, GameState, Player, Role, Room } from "./games/mafia/types.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -657,6 +657,19 @@ describe("PhaseController", () => {
         "tense", "shadows", "moved", "through", "town", "but", "when",
         "morning", "came", "everyone", "survived", "as", "dawn", "broke",
         "gathered", "square", "found", "eliminated",
+        "sun", "rose", "darker", "day", "grim", "scene", "light",
+        "air", "scream", "pierced", "did", "not", "survive", "taken",
+        "wake", "news", "awoke", "devastating", "lifeless", "again",
+        "peaceful", "silence", "all", "until", "soul", "woke", "safely",
+        "nothing", "stirred", "darkness", "arrived", "without", "incident",
+        "slept", "undisturbed", "rare", "quiet", "dark", "yet", "miracle",
+        "lost", "danger", "real", "watched", "over", "every", "accounted",
+        "narrow", "escape", "dead", "fate", "kind", "lives", "see",
+        "another", "evil", "crept", "nearby", "turned", "away", "breathes",
+        "sigh", "relief", "some", "blanket", "blanketed", "claiming",
+        "rising", "revealed", "never", "has", "been", "from",
+        // Also exclude substrings of the hardcoded civilian names used in this test
+        "civilianalpha", "civilianbeta",
       ];
       const nameGen = fc
         .stringMatching(/^[A-Za-z]{3,15}$/)
