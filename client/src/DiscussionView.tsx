@@ -29,7 +29,7 @@ export function DiscussionView(): React.JSX.Element {
 
   function handleSubmitAccusation() {
     if (!accusationTarget) return;
-    socket.emit("submitAccusation", { roomCode, targetId: accusationTarget });
+    socket.emit("gameEvent", { type: "accusation", data: { targetId: accusationTarget } });
     setAccusationSubmitted(true);
   }
 
@@ -148,7 +148,7 @@ export function DiscussionView(): React.JSX.Element {
       {/* Skip to Vote button — Host only */}
       {myPlayer?.isHost && (
         <button
-          onClick={() => socket.emit("skipDiscussion", { roomCode })}
+          onClick={() => socket.emit("gameEvent", { type: "skipDiscussion", data: {} })}
           style={styles.skipButton}
         >
           Skip to Vote

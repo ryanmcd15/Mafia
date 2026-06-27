@@ -3,6 +3,12 @@ import { useGameStore } from "./store";
 import socket from "./socket";
 import { Role } from "./types";
 
+const ROLE_COLORS: Record<Role, string> = {
+  [Role.Killer]: "var(--danger, #ff4757)",
+  [Role.Medic]: "var(--success, #2ed573)",
+  [Role.Civilian]: "var(--text-secondary, #b0b0b0)",
+};
+
 const WIN_CONDITIONS: Record<Role, string> = {
   [Role.Killer]: "Eliminate all non-Killer players to win",
   [Role.Medic]: "Find and eliminate the Killer to win",
@@ -20,7 +26,7 @@ export function RoleRevealView(): React.JSX.Element {
   const [acknowledged, setAcknowledged] = useState(false);
 
   function handleAcknowledge() {
-    socket.emit("roleAcknowledged", { roomCode });
+    socket.emit("gameEvent", { type: "acknowledgeRole", data: {} });
     setAcknowledged(true);
   }
 
@@ -36,7 +42,7 @@ export function RoleRevealView(): React.JSX.Element {
     <div style={styles.container}>
       <div style={styles.card}>
         <p style={styles.label}>Your Role</p>
-        <h1 style={styles.roleName}>{role}</h1>
+        <h1 style={{ ...styles.roleName, color: ROLE_COLORS[role] }}>{role}</h1>
 
         <div style={styles.section}>
           <p style={styles.sectionLabel}>Win Condition</p>

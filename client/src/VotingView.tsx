@@ -27,12 +27,12 @@ export function VotingView(): React.JSX.Element {
 
   function handleSubmit() {
     if (!selectedTargetId) return;
-    socket.emit("submitVote", { roomCode, targetId: selectedTargetId });
+    socket.emit("gameEvent", { type: "submitVote", data: { targetId: selectedTargetId } });
     setSubmitted(true);
   }
 
   function handleSkipVote() {
-    socket.emit("submitSkipVote", { roomCode });
+    socket.emit("gameEvent", { type: "skipVote", data: {} });
     setSubmitted(true);
   }
 

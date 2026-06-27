@@ -143,6 +143,25 @@ export function GameProvider({
   stateRef.current = state;
 
   useEffect(() => {
+    // Request current game state on mount (handles race with gameSelected)
+    socket.emit("gameEvent", { type: "getState" }, (response: { success: boolean; state?: any }) => {
+      if (response?.success && response.state) {
+        const s = response.state;
+        if (s.myRole) {
+          dispatch({ type: "ROLE_ASSIGNED", role: s.myRole });
+        }
+        if (s.phase && s.players) {
+          dispatch({
+            type: "PHASE_CHANGED",
+            phase: s.phase,
+            players: s.players,
+            voteHistory: s.voteHistory,
+            round: s.round,
+          });
+        }
+      }
+    });
+
     function onRoomUpdated(data: {
       players: Player[];
       roomCode: string;
@@ -250,7 +269,7 @@ export function GameProvider({
     socket.on("gameStarted", onGameStarted);
     socket.on("roleAssigned", onRoleAssigned);
     socket.on("phaseChanged", onPhaseChanged);
-    socket.on("morningNarration", onMorningNarration);
+    socket.on("narration", onMorningNarration);
     socket.on("votingOpened", onVotingOpened);
     socket.on("voteResults", onVoteResults);
     socket.on("playerEliminated", onPlayerEliminated);
@@ -266,7 +285,7 @@ export function GameProvider({
       socket.off("gameStarted", onGameStarted);
       socket.off("roleAssigned", onRoleAssigned);
       socket.off("phaseChanged", onPhaseChanged);
-      socket.off("morningNarration", onMorningNarration);
+      socket.off("narration", onMorningNarration);
       socket.off("votingOpened", onVotingOpened);
       socket.off("voteResults", onVoteResults);
       socket.off("playerEliminated", onPlayerEliminated);

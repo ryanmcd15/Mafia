@@ -1,11 +1,16 @@
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 import { Platform } from "./Platform.js";
 import { MafiaModule } from "./games/mafia/MafiaModule.js";
 import { TruthOrDareModule } from "./games/truth-or-dare/TruthOrDareModule.js";
 import { TwoTruthsOneLieModule } from "./games/two-truths-one-lie/TwoTruthsOneLieModule.js";
 import { SpyfallModule } from "./games/spyfall/SpyfallModule.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
@@ -13,6 +18,13 @@ const io = new Server(httpServer, {
   cors: {
     origin: "*",
   },
+});
+
+// Serve the built client (after running `npm run build` in client/)
+const clientDistPath = join(__dirname, "../../client/dist");
+app.use(express.static(clientDistPath));
+app.get("*", (_req, res) => {
+  res.sendFile(join(clientDistPath, "index.html"));
 });
 
 const platform = new Platform(io);

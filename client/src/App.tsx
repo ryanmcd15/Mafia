@@ -1,19 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ConnectionLostModal, GameProvider, useGameStore } from "./store";
-import { HomeView } from "./HomeView";
-import { LobbyView } from "./LobbyView";
-import { RoleRevealView } from "./RoleRevealView";
-import { NightView } from "./NightView";
-import { MorningView } from "./MorningView";
-import { DiscussionView } from "./DiscussionView";
-import { VotingView } from "./VotingView";
-import { ResultsView } from "./ResultsView";
-import { GameOverView } from "./GameOverView";
-import { SpectatorView } from "./SpectatorView";
-import { GamePhase } from "./types";
+import {
+  PlatformProvider,
+  PlatformConnectionLostModal,
+  usePlatformStore,
+} from "./store/platformStore";
+import { PlatformPhase } from "./store/types";
+import { getGameUI, GameUIProps } from "./games/registry";
+import { LandingPage } from "./pages/LandingPage";
+import { GameSelectionScreen } from "./pages/GameSelectionScreen";
+import { GameResultsScreen } from "./pages/GameResultsScreen";
 
 function ErrorToast(): React.JSX.Element | null {
-  const { error } = useGameStore();
+  const { error } = usePlatformStore();
 
   if (!error) return null;
 
@@ -45,28 +43,26 @@ function ErrorToast(): React.JSX.Element | null {
 
 /** Wraps children with a fade-to-black transition on phase changes */
 function PhaseTransition({ children }: { children: React.ReactNode }): React.JSX.Element {
-  const { phase } = useGameStore();
+  const { platformPhase } = usePlatformStore();
   const [displayedChildren, setDisplayedChildren] = useState(children);
   const [fading, setFading] = useState(false);
-  const prevPhaseRef = useRef(phase);
+  const prevPhaseRef = useRef(platformPhase);
 
   useEffect(() => {
-    // Skip fade for initial render or if phase hasn't changed
-    if (prevPhaseRef.current === phase) {
+    if (prevPhaseRef.current === platformPhase) {
       setDisplayedChildren(children);
       return;
     }
 
-    // Phase changed — fade out, swap content, fade in
     setFading(true);
     const timer = setTimeout(() => {
       setDisplayedChildren(children);
       setFading(false);
-      prevPhaseRef.current = phase;
-    }, 400); // fade-out duration
+      prevPhaseRef.current = platformPhase;
+    }, 400);
 
     return () => clearTimeout(timer);
-  }, [phase, children]);
+  }, [platformPhase, children]);
 
   return (
     <div
@@ -81,51 +77,56 @@ function PhaseTransition({ children }: { children: React.ReactNode }): React.JSX
   );
 }
 
-function GameContent(): React.JSX.Element {
-  const { roomCode, phase, myPlayer } = useGameStore();
+function PlatformContent(): React.JSX.Element {
+  const { roomCode, platformPhase, activeGameId, players, myPlayer } =
+    usePlatformStore();
 
+  // No room — show landing
   if (!roomCode) {
-    return <HomeView />;
+    return <LandingPage />;
   }
 
-  if (phase === GamePhase.Lobby || phase === null) {
-    return <LobbyView />;
+  // Game selection or lobby phase
+  if (
+    platformPhase === PlatformPhase.GameSelection ||
+    platformPhase === PlatformPhase.Lobby
+  ) {
+    return <GameSelectionScreen />;
   }
 
-  // Eliminated players see SpectatorView for all phases except GameOver
-  if (myPlayer?.isAlive === false && phase !== GamePhase.GameOver) {
-    return <SpectatorView />;
+  // Active game — render the game module UI from registry
+  if (platformPhase === PlatformPhase.ActiveGame && activeGameId) {
+    const gameModule = getGameUI(activeGameId);
+    if (gameModule) {
+      const gameUIProps: GameUIProps = {
+        roomCode,
+        players,
+        myPlayerId: myPlayer?.id ?? "",
+        isHost: myPlayer?.isHost ?? false,
+      };
+      const GameComponent = gameModule.component;
+      return <GameComponent {...gameUIProps} />;
+    }
   }
 
-  switch (phase) {
-    case GamePhase.RoleReveal:
-      return <RoleRevealView />;
-    case GamePhase.Night:
-      return <NightView />;
-    case GamePhase.Morning:
-      return <MorningView />;
-    case GamePhase.Discussion:
-      return <DiscussionView />;
-    case GamePhase.Voting:
-      return <VotingView />;
-    case GamePhase.Results:
-      return <ResultsView />;
-    case GamePhase.GameOver:
-      return <GameOverView />;
-    default:
-      return <LobbyView />;
+  // Game results
+  if (platformPhase === PlatformPhase.GameResults) {
+    return <GameResultsScreen />;
   }
+
+  // Default fallback
+  return <LandingPage />;
 }
 
 function App(): React.JSX.Element {
   return (
-    <GameProvider>
-      <ConnectionLostModal />
+    <PlatformProvider>
+      <PlatformConnectionLostModal />
       <ErrorToast />
       <PhaseTransition>
-        <GameContent />
+        <PlatformContent />
       </PhaseTransition>
-    </GameProvider>
+    </PlatformProvider>
   );
 }
 

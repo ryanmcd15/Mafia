@@ -9,29 +9,37 @@ export function GameOverView(): React.JSX.Element {
   const isHost = myPlayer?.isHost ?? false;
   const isCiviliansWin = winCondition?.winner === "Civilians";
 
+  // Show confetti only if you're on the winning side
+  const myRole = myPlayer?.role;
+  const isWinner = isCiviliansWin
+    ? myRole !== Role.Killer  // Civilians and Medic win
+    : myRole === Role.Killer; // Killer wins
+
   function handlePlayAgain() {
     socket.emit("replayGame", { roomCode });
   }
 
   return (
     <div style={styles.container}>
-      {/* Confetti particles */}
-      <div style={styles.confettiContainer} aria-hidden="true">
-        {Array.from({ length: 30 }).map((_, i) => (
-          <div
-            key={i}
-            style={{
-              ...styles.confetti,
-              left: `${Math.random() * 100}%`,
-              backgroundColor: isCiviliansWin
-                ? ["#2ed573", "#7bed9f", "#4ecdc4", "#45b7d1", "#96ceb4"][i % 5]
-                : ["#ff4757", "#ff6b6b", "#ffa502", "#ff6348", "#eb3b5a"][i % 5],
-              animationDelay: `${Math.random() * 2}s`,
-              animationDuration: `${2 + Math.random() * 2}s`,
-            }}
-          />
-        ))}
-      </div>
+      {/* Confetti particles — only for winning side */}
+      {isWinner && (
+        <div style={styles.confettiContainer} aria-hidden="true">
+          {Array.from({ length: 30 }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                ...styles.confetti,
+                left: `${Math.random() * 100}%`,
+                backgroundColor: isCiviliansWin
+                  ? ["#2ed573", "#7bed9f", "#4ecdc4", "#45b7d1", "#96ceb4"][i % 5]
+                  : ["#ff4757", "#ff6b6b", "#ffa502", "#ff6348", "#eb3b5a"][i % 5],
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${2 + Math.random() * 2}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
       <style>{confettiKeyframes}</style>
       {/* Winner Announcement Banner */}
       <div

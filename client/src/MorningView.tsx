@@ -2,19 +2,30 @@ import { useEffect, useState } from "react";
 import { useGameStore } from "./store";
 import socket from "./socket";
 
-const SEGMENT_DELAY_MS = 5500;
+const SEGMENT_DELAY_MS = 1500;
 
 export function MorningView(): React.JSX.Element {
   const { narration, roomCode, medicFeedback } = useGameStore();
   const segments = narration?.segments ?? [];
   const [visibleCount, setVisibleCount] = useState(0);
   const [flashType, setFlashType] = useState<"kill" | "save" | null>(null);
+  const [emittedComplete, setEmittedComplete] = useState(false);
 
   const wasKill = narration?.eliminatedPlayerId !== null && narration?.eliminatedPlayerId !== undefined;
   const wasSaved = narration?.wasSaved === true;
 
+  // Main narration effect — handles both narration present and absent
   useEffect(() => {
-    if (segments.length === 0) return;
+    if (emittedComplete) return;
+
+    if (segments.length === 0) {
+      // No narration yet — wait 5s fallback then auto-advance
+      const fallback = setTimeout(() => {
+        socket.emit("gameEvent", { type: "narrationComplete", data: {} });
+        setEmittedComplete(true);
+      }, 5000);
+      return () => clearTimeout(fallback);
+    }
 
     // Show first segment immediately
     setVisibleCount(1);
@@ -32,18 +43,18 @@ export function MorningView(): React.JSX.Element {
           } else if (wasSaved) {
             setFlashType("save");
           }
-          // Clear flash after animation completes
           setTimeout(() => setFlashType(null), 1200);
         }
       } else {
-        // All segments displayed, final delay elapsed — emit complete
+        // All segments displayed — emit complete
         clearInterval(timer);
-        socket.emit("narrationComplete", { roomCode });
+        socket.emit("gameEvent", { type: "narrationComplete", data: {} });
+        setEmittedComplete(true);
       }
     }, SEGMENT_DELAY_MS);
 
     return () => clearInterval(timer);
-  }, [segments.length]);
+  }, [segments.length, emittedComplete]);
 
   if (segments.length === 0) {
     return (
@@ -67,6 +78,48 @@ export function MorningView(): React.JSX.Element {
             animation: "flashPulse 1.2s ease-out forwards",
           }}
         />
+      )}
+
+      {/* Blood splatter on kill */}
+      {flashType === "kill" && (
+        <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 2, overflow: "hidden" }} aria-hidden="true">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                left: `${10 + Math.random() * 80}%`,
+                top: `${10 + Math.random() * 80}%`,
+                width: `${12 + Math.random() * 24}px`,
+                height: `${12 + Math.random() * 24}px`,
+                borderRadius: "50%",
+                backgroundColor: `rgba(${150 + Math.floor(Math.random() * 80)}, 0, 0, ${0.5 + Math.random() * 0.4})`,
+                animation: `splatIn ${0.3 + Math.random() * 0.4}s ease-out forwards`,
+                animationDelay: `${Math.random() * 0.3}s`,
+                transform: "scale(0)",
+              }}
+            />
+          ))}
+          {/* Drip streaks */}
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={`drip-${i}`}
+              style={{
+                position: "absolute",
+                left: `${15 + Math.random() * 70}%`,
+                top: `${20 + Math.random() * 40}%`,
+                width: `${3 + Math.random() * 4}px`,
+                height: `${30 + Math.random() * 60}px`,
+                borderRadius: "0 0 4px 4px",
+                backgroundColor: `rgba(180, 0, 0, ${0.4 + Math.random() * 0.3})`,
+                animation: `dripDown ${0.6 + Math.random() * 0.5}s ease-in forwards`,
+                animationDelay: `${0.2 + Math.random() * 0.3}s`,
+                transform: "scaleY(0)",
+                transformOrigin: "top",
+              }}
+            />
+          ))}
+        </div>
       )}
 
       {segments.slice(0, visibleCount).map((segment, i) => (
@@ -151,5 +204,16 @@ const keyframes = `
   40%  { opacity: 0.7; }
   60%  { opacity: 0.9; }
   100% { opacity: 0; }
+}
+
+@keyframes splatIn {
+  0%   { transform: scale(0); opacity: 1; }
+  70%  { transform: scale(1.3); opacity: 0.9; }
+  100% { transform: scale(1); opacity: 0.7; }
+}
+
+@keyframes dripDown {
+  0%   { transform: scaleY(0); opacity: 0.8; }
+  100% { transform: scaleY(1); opacity: 0.4; }
 }
 `;

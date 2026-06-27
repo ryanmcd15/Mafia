@@ -36,7 +36,7 @@ function KillerSubView({
 
   function handleSubmitKill() {
     if (!selectedId) return;
-    socket.emit("submitKill", { roomCode, targetId: selectedId });
+    socket.emit("gameEvent", { type: "nightAction", data: { targetId: selectedId, action: "kill" } });
     setSubmitted(true);
   }
 
@@ -99,7 +99,7 @@ function MedicSubView({
 
   function handleSubmitSave() {
     if (!selectedId) return;
-    socket.emit("submitSave", { roomCode, targetId: selectedId });
+    socket.emit("gameEvent", { type: "nightAction", data: { targetId: selectedId, action: "save" } });
     setSubmitted(true);
   }
 

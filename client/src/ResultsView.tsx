@@ -5,6 +5,18 @@ import type { Player } from "./types";
 export function ResultsView(): React.JSX.Element {
   const { voteResult, players } = useGameStore();
 
+  // Not yet received
+  if (!voteResult) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.content}>
+          <p style={styles.tieLabel}>Tallying votes...</p>
+        </div>
+        <style>{resultsKeyframes}</style>
+      </div>
+    );
+  }
+
   // Tie scenario
   if (voteResult?.isTie) {
     const tiedNames = voteResult.tiedPlayers
@@ -18,6 +30,7 @@ export function ResultsView(): React.JSX.Element {
           <p style={styles.tieSubtext}>The vote was tied</p>
           <p style={styles.tiedNames}>{tiedNames}</p>
         </div>
+        <style>{resultsKeyframes}</style>
       </div>
     );
   }
