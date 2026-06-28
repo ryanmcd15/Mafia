@@ -33,6 +33,21 @@ export function VotingView(): React.JSX.Element {
   const minutes = String(Math.floor(timeLeft / 60)).padStart(2, "0");
   const seconds = String(timeLeft % 60).padStart(2, "0");
 
+  // Timer color transitions: white → yellow → red
+  const timerColor =
+    timeLeft <= 10
+      ? "#ff4757"
+      : timeLeft <= 30
+        ? "#ffa502"
+        : "var(--text-primary)";
+
+  const timerGlow =
+    timeLeft <= 10
+      ? "0 0 20px rgba(255, 71, 87, 0.4)"
+      : timeLeft <= 30
+        ? "0 0 12px rgba(255, 165, 2, 0.2)"
+        : "none";
+
   // Living players excluding self
   const alivePlayers: Player[] = players.filter((p) => p.isAlive);
   const targets: Player[] = alivePlayers.filter(
@@ -54,30 +69,21 @@ export function VotingView(): React.JSX.Element {
   }
 
   return (
-    <div style={{ padding: "24px 16px", maxWidth: "480px", margin: "0 auto" }}>
+    <div style={styles.outerContainer}>
+      {/* Header */}
+      <div style={styles.header}>
+        <h1 style={styles.title}>🗳️ Vote to Eliminate</h1>
+      </div>
+
       {/* Timer */}
-      <div
-        style={{
-          textAlign: "center",
-          marginBottom: "24px",
-        }}
-      >
-        <p
-          style={{
-            fontSize: "14px",
-            color: "var(--text-secondary)",
-            marginBottom: "4px",
-          }}
-        >
-          Time remaining
-        </p>
+      <div style={styles.timerWrapper}>
+        <p style={styles.timerLabel}>Time remaining</p>
         <p
           aria-live="polite"
           style={{
-            fontSize: "32px",
-            fontWeight: "bold",
-            fontVariantNumeric: "tabular-nums",
-            color: timeLeft <= 10 ? "var(--danger)" : "var(--text-primary)",
+            ...styles.timerValue,
+            color: timerColor,
+            textShadow: timerGlow !== "none" ? timerGlow : undefined,
           }}
         >
           {minutes}:{seconds}
@@ -85,95 +91,53 @@ export function VotingView(): React.JSX.Element {
       </div>
 
       {submitted ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "32px 16px",
-            background: "var(--bg-secondary)",
-            borderRadius: "12px",
-          }}
-        >
-          <p
-            style={{
-              fontSize: "18px",
-              fontWeight: "bold",
-              color: "var(--success)",
-              marginBottom: "8px",
-            }}
-          >
-            Vote submitted!
-          </p>
+        <div style={styles.submittedCard}>
+          <div style={styles.checkmarkCircle} aria-hidden="true">
+            <span style={styles.checkmark}>✓</span>
+          </div>
+          <p style={styles.submittedTitle}>Vote submitted!</p>
           {votedForName ? (
-            <p style={{ color: "var(--text-primary)", marginBottom: "12px" }}>
+            <p style={styles.submittedDetail}>
               You voted to eliminate: <strong>{votedForName}</strong>
             </p>
           ) : (
-            <p style={{ color: "var(--text-secondary)", marginBottom: "12px" }}>
+            <p style={styles.submittedDetailMuted}>
               You skipped your vote.
             </p>
           )}
-          <p
-            style={{
-              color: "var(--text-secondary)",
-              fontSize: "14px",
-            }}
-            aria-live="polite"
-          >
+          <p style={styles.voteProgress} aria-live="polite">
             {voteCount} of {alivePlayers.length} voted
           </p>
-          <p style={{ color: "var(--text-secondary)", marginTop: "8px" }}>
-            Waiting for others...
-          </p>
+          <div style={styles.waitingDots}>
+            <span style={styles.waitingText}>Waiting for others</span>
+            <span style={styles.dots}>...</span>
+          </div>
         </div>
       ) : (
-        <>
-          {/* Heading */}
-          <h2
-            style={{
-              fontSize: "18px",
-              marginBottom: "12px",
-              color: "var(--text-primary)",
-            }}
-          >
-            Vote to eliminate
-          </h2>
-
+        <div style={styles.votingArea}>
           {/* Player list */}
           <ul
             role="listbox"
             aria-label="Vote targets"
-            style={{ listStyle: "none", marginBottom: "20px" }}
+            style={styles.playerList}
           >
             {targets.map((player) => {
               const isSelected = selectedTargetId === player.id;
               return (
-                <li key={player.id} style={{ marginBottom: "8px" }}>
+                <li key={player.id} style={styles.playerItem}>
                   <button
                     role="option"
                     aria-selected={isSelected}
                     onClick={() => setSelectedTargetId(player.id)}
                     style={{
-                      width: "100%",
-                      minHeight: "44px",
-                      padding: "12px 16px",
-                      display: "flex",
-                      alignItems: "center",
-                      background: isSelected
-                        ? "var(--accent)"
-                        : "var(--bg-secondary)",
-                      color: isSelected
-                        ? "#ffffff"
-                        : "var(--text-primary)",
-                      border: isSelected
-                        ? "2px solid var(--accent)"
-                        : "2px solid var(--bg-tertiary)",
-                      borderRadius: "8px",
-                      fontSize: "16px",
-                      cursor: "pointer",
-                      transition: "background 0.15s, border-color 0.15s",
+                      ...styles.playerButton,
+                      ...(isSelected ? styles.playerButtonSelected : {}),
                     }}
                   >
-                    {player.name}
+                    <span style={styles.playerName}>{player.name}</span>
+                    {isSelected && (
+                      <span style={styles.skullIcon}>💀</span>
+                    )}
                   </button>
                 </li>
               );
@@ -185,47 +149,227 @@ export function VotingView(): React.JSX.Element {
             onClick={handleSubmit}
             disabled={!selectedTargetId}
             style={{
-              width: "100%",
-              minHeight: "44px",
-              padding: "14px",
-              fontSize: "16px",
-              fontWeight: "bold",
-              color: "#ffffff",
-              background: selectedTargetId
-                ? "var(--danger)"
-                : "var(--bg-tertiary)",
-              border: "none",
-              borderRadius: "8px",
-              cursor: selectedTargetId ? "pointer" : "not-allowed",
-              opacity: selectedTargetId ? 1 : 0.6,
-              transition: "background 0.15s, opacity 0.15s",
+              ...styles.submitButton,
+              ...(selectedTargetId ? styles.submitButtonActive : styles.submitButtonDisabled),
             }}
           >
-            Submit Vote
+            ⚠️ Submit Vote
           </button>
 
           {/* Skip Vote button */}
           <button
             onClick={handleSkipVote}
-            style={{
-              width: "100%",
-              minHeight: "44px",
-              padding: "14px",
-              fontSize: "16px",
-              fontWeight: "bold",
-              color: "var(--text-secondary)",
-              background: "transparent",
-              border: "2px solid var(--bg-tertiary)",
-              borderRadius: "8px",
-              cursor: "pointer",
-              marginTop: "12px",
-              transition: "border-color 0.15s",
-            }}
+            style={styles.skipButton}
           >
             Skip Vote
           </button>
-        </>
+        </div>
       )}
+
+      <style>{votingKeyframes}</style>
     </div>
   );
 }
+
+const votingKeyframes = `
+@keyframes checkPop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseDots {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+`;
+
+const styles: Record<string, React.CSSProperties> = {
+  outerContainer: {
+    padding: "24px 16px",
+    maxWidth: "480px",
+    margin: "0 auto",
+    minHeight: "100vh",
+    background: "linear-gradient(180deg, #1a1a1a 0%, #1f1a2e 50%, #1a1a1a 100%)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "20px",
+  },
+  header: {
+    textAlign: "center",
+    paddingTop: "8px",
+  },
+  title: {
+    fontSize: "24px",
+    fontWeight: 700,
+    color: "var(--text-primary)",
+    margin: 0,
+  },
+  timerWrapper: {
+    textAlign: "center",
+  },
+  timerLabel: {
+    fontSize: "13px",
+    color: "var(--text-secondary)",
+    marginBottom: "4px",
+    textTransform: "uppercase",
+    letterSpacing: "1px",
+  },
+  timerValue: {
+    fontSize: "3.5rem",
+    fontWeight: 700,
+    fontVariantNumeric: "tabular-nums",
+    transition: "color 0.5s ease, text-shadow 0.5s ease",
+    margin: 0,
+  },
+  submittedCard: {
+    textAlign: "center",
+    padding: "36px 20px",
+    background: "var(--bg-secondary)",
+    borderRadius: "16px",
+    border: "1px solid var(--bg-tertiary)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "12px",
+    animation: "fadeInUp 0.4s ease-out",
+  },
+  checkmarkCircle: {
+    width: "56px",
+    height: "56px",
+    borderRadius: "50%",
+    backgroundColor: "rgba(46, 213, 115, 0.15)",
+    border: "2px solid var(--success)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    animation: "checkPop 0.5s ease-out",
+  },
+  checkmark: {
+    fontSize: "28px",
+    color: "var(--success)",
+    fontWeight: 700,
+  },
+  submittedTitle: {
+    fontSize: "20px",
+    fontWeight: 700,
+    color: "var(--success)",
+    margin: 0,
+  },
+  submittedDetail: {
+    color: "var(--text-primary)",
+    fontSize: "15px",
+    margin: 0,
+  },
+  submittedDetailMuted: {
+    color: "var(--text-secondary)",
+    fontSize: "15px",
+    margin: 0,
+  },
+  voteProgress: {
+    color: "var(--text-secondary)",
+    fontSize: "13px",
+    margin: 0,
+  },
+  waitingDots: {
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+    marginTop: "4px",
+  },
+  waitingText: {
+    color: "var(--text-secondary)",
+    fontSize: "14px",
+  },
+  dots: {
+    color: "var(--text-secondary)",
+    animation: "pulseDots 1.5s ease-in-out infinite",
+  },
+  votingArea: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+  },
+  playerList: {
+    listStyle: "none",
+    margin: 0,
+    padding: 0,
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+  },
+  playerItem: {
+    margin: 0,
+  },
+  playerButton: {
+    width: "100%",
+    minHeight: "52px",
+    padding: "14px 18px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    background: "var(--bg-secondary)",
+    color: "var(--text-primary)",
+    border: "2px solid var(--bg-tertiary)",
+    borderRadius: "12px",
+    fontSize: "16px",
+    fontWeight: 500,
+    cursor: "pointer",
+    transition: "background 0.2s, border-color 0.2s, box-shadow 0.2s",
+  },
+  playerButtonSelected: {
+    background: "rgba(255, 71, 87, 0.12)",
+    borderColor: "#ff4757",
+    color: "#ffffff",
+    boxShadow: "0 0 14px rgba(255, 71, 87, 0.2)",
+  },
+  playerName: {
+    fontSize: "16px",
+    fontWeight: 500,
+  },
+  skullIcon: {
+    fontSize: "20px",
+  },
+  submitButton: {
+    width: "100%",
+    minHeight: "52px",
+    padding: "16px",
+    fontSize: "17px",
+    fontWeight: 700,
+    border: "none",
+    borderRadius: "12px",
+    transition: "background 0.2s, opacity 0.2s, box-shadow 0.2s",
+    marginTop: "8px",
+  },
+  submitButtonActive: {
+    color: "#ffffff",
+    background: "linear-gradient(135deg, #ff4757 0%, #c0392b 100%)",
+    cursor: "pointer",
+    opacity: 1,
+    boxShadow: "0 4px 20px rgba(255, 71, 87, 0.35)",
+  },
+  submitButtonDisabled: {
+    color: "var(--text-secondary)",
+    background: "var(--bg-tertiary)",
+    cursor: "not-allowed",
+    opacity: 0.6,
+  },
+  skipButton: {
+    width: "100%",
+    minHeight: "44px",
+    padding: "14px",
+    fontSize: "15px",
+    fontWeight: 600,
+    color: "var(--text-secondary)",
+    background: "transparent",
+    border: "2px solid var(--bg-tertiary)",
+    borderRadius: "12px",
+    cursor: "pointer",
+    transition: "border-color 0.2s",
+  },
+};

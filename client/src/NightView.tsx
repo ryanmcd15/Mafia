@@ -42,16 +42,21 @@ function KillerSubView({
 
   if (submitted) {
     return (
-      <div style={styles.container}>
-        <p style={styles.waitingText}>Waiting for other players...</p>
+      <div style={killerStyles.container}>
+        <div style={killerStyles.waitingWrapper}>
+          <div style={killerStyles.pulseOrb} aria-hidden="true" />
+          <p style={killerStyles.waitingText}>Waiting for other players...</p>
+        </div>
+        <style>{killerKeyframes}</style>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.heading}>Choose your target</h2>
-      <ul style={styles.playerList} role="listbox" aria-label="Target selection">
+    <div style={killerStyles.container}>
+      <h2 style={killerStyles.heading}>🔪 Choose your target</h2>
+      <p style={killerStyles.subtext}>Select a player to eliminate tonight</p>
+      <ul style={killerStyles.playerList} role="listbox" aria-label="Target selection">
         {targets.map((player) => (
           <li
             key={player.id}
@@ -59,11 +64,14 @@ function KillerSubView({
             aria-selected={selectedId === player.id}
             onClick={() => setSelectedId(player.id)}
             style={{
-              ...styles.playerRow,
-              ...(selectedId === player.id ? styles.playerRowSelected : {}),
+              ...killerStyles.playerRow,
+              ...(selectedId === player.id ? killerStyles.playerRowSelected : {}),
             }}
           >
-            <span style={styles.playerName}>{player.name}</span>
+            <span style={killerStyles.playerName}>{player.name}</span>
+            {selectedId === player.id && (
+              <span style={killerStyles.selectedIndicator}>💀</span>
+            )}
           </li>
         ))}
       </ul>
@@ -71,13 +79,14 @@ function KillerSubView({
         onClick={handleSubmitKill}
         disabled={!selectedId}
         style={{
-          ...styles.submitButton,
-          ...(selectedId ? styles.submitButtonEnabled : styles.submitButtonDisabled),
+          ...killerStyles.submitButton,
+          ...(selectedId ? killerStyles.submitButtonEnabled : killerStyles.submitButtonDisabled),
         }}
         aria-disabled={!selectedId}
       >
-        Submit Kill
+        🔪 Submit Kill
       </button>
+      <style>{killerKeyframes}</style>
     </div>
   );
 }
@@ -105,16 +114,21 @@ function MedicSubView({
 
   if (submitted) {
     return (
-      <div style={styles.container}>
-        <p style={styles.waitingText}>Waiting for other players...</p>
+      <div style={medicStyles.container}>
+        <div style={medicStyles.waitingWrapper}>
+          <div style={medicStyles.pulseOrb} aria-hidden="true" />
+          <p style={medicStyles.waitingText}>Waiting for other players...</p>
+        </div>
+        <style>{medicKeyframes}</style>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.heading}>Choose who to save</h2>
-      <ul style={styles.playerList} role="listbox" aria-label="Target selection">
+    <div style={medicStyles.container}>
+      <h2 style={medicStyles.heading}>🩺 Choose who to protect</h2>
+      <p style={medicStyles.subtext}>Select a player to save tonight</p>
+      <ul style={medicStyles.playerList} role="listbox" aria-label="Target selection">
         {targets.map((player) => (
           <li
             key={player.id}
@@ -122,14 +136,17 @@ function MedicSubView({
             aria-selected={selectedId === player.id}
             onClick={() => setSelectedId(player.id)}
             style={{
-              ...styles.playerRow,
-              ...(selectedId === player.id ? styles.playerRowSelected : {}),
+              ...medicStyles.playerRow,
+              ...(selectedId === player.id ? medicStyles.playerRowSelected : {}),
             }}
           >
-            <span style={styles.playerName}>
+            <span style={medicStyles.playerName}>
               {player.name}
               {player.id === myPlayer?.id ? " (You)" : ""}
             </span>
+            {selectedId === player.id && (
+              <span style={medicStyles.selectedIndicator}>🛡️</span>
+            )}
           </li>
         ))}
       </ul>
@@ -137,13 +154,14 @@ function MedicSubView({
         onClick={handleSubmitSave}
         disabled={!selectedId}
         style={{
-          ...styles.submitButton,
-          ...(selectedId ? styles.submitButtonEnabled : styles.submitButtonDisabled),
+          ...medicStyles.submitButton,
+          ...(selectedId ? medicStyles.submitButtonEnabled : medicStyles.submitButtonDisabled),
         }}
         aria-disabled={!selectedId}
       >
-        Submit Save
+        🩺 Submit Save
       </button>
+      <style>{medicKeyframes}</style>
     </div>
   );
 }
@@ -178,6 +196,8 @@ function CivilianSubView({ round }: { round: number }): React.JSX.Element {
   );
 }
 
+// --- Keyframes ---
+
 const nightKeyframes = `
 @keyframes moonPulse {
   0%, 100% { opacity: 0.7; transform: scale(1); }
@@ -190,9 +210,23 @@ const nightKeyframes = `
 }
 `;
 
-// --- Styles ---
+const killerKeyframes = `
+@keyframes killerPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+}
+`;
 
-const styles: Record<string, React.CSSProperties> = {
+const medicKeyframes = `
+@keyframes medicPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+}
+`;
+
+// --- Killer Styles ---
+
+const killerStyles: Record<string, React.CSSProperties> = {
   container: {
     display: "flex",
     flexDirection: "column",
@@ -200,12 +234,21 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "24px 16px",
     minHeight: "100vh",
     gap: "16px",
+    background: "linear-gradient(180deg, #1a1a1a 0%, #2a1515 50%, #1a1010 100%)",
   },
   heading: {
-    fontSize: "20px",
-    color: "var(--text-primary)",
-    marginBottom: "8px",
+    fontSize: "22px",
+    color: "#ff4757",
+    marginBottom: "0",
     textAlign: "center",
+    fontWeight: 700,
+    marginTop: "16px",
+  },
+  subtext: {
+    fontSize: "14px",
+    color: "var(--text-secondary)",
+    textAlign: "center",
+    marginBottom: "8px",
   },
   playerList: {
     listStyle: "none",
@@ -220,22 +263,28 @@ const styles: Record<string, React.CSSProperties> = {
   playerRow: {
     display: "flex",
     alignItems: "center",
-    padding: "12px 16px",
+    justifyContent: "space-between",
+    padding: "14px 18px",
     minHeight: "44px",
     minWidth: "44px",
-    backgroundColor: "var(--bg-secondary)",
-    borderRadius: "8px",
+    backgroundColor: "rgba(255, 71, 87, 0.06)",
+    borderRadius: "10px",
     cursor: "pointer",
-    border: "2px solid transparent",
-    transition: "border-color 0.2s, background-color 0.2s",
+    border: "2px solid rgba(255, 71, 87, 0.15)",
+    transition: "border-color 0.2s, background-color 0.2s, box-shadow 0.2s",
   },
   playerRowSelected: {
-    borderColor: "var(--accent)",
-    backgroundColor: "var(--bg-tertiary)",
+    borderColor: "#ff4757",
+    backgroundColor: "rgba(255, 71, 87, 0.15)",
+    boxShadow: "0 0 12px rgba(255, 71, 87, 0.25)",
   },
   playerName: {
     fontSize: "16px",
     color: "var(--text-primary)",
+    fontWeight: 500,
+  },
+  selectedIndicator: {
+    fontSize: "18px",
   },
   submitButton: {
     width: "100%",
@@ -246,14 +295,15 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "18px",
     fontWeight: "bold",
     border: "none",
-    borderRadius: "8px",
+    borderRadius: "10px",
     marginTop: "16px",
-    transition: "background-color 0.2s",
+    transition: "background-color 0.2s, box-shadow 0.2s",
   },
   submitButtonEnabled: {
-    backgroundColor: "var(--accent)",
-    color: "var(--text-primary)",
+    backgroundColor: "#ff4757",
+    color: "#ffffff",
     cursor: "pointer",
+    boxShadow: "0 4px 16px rgba(255, 71, 87, 0.3)",
   },
   submitButtonDisabled: {
     backgroundColor: "var(--bg-tertiary)",
@@ -261,12 +311,144 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "not-allowed",
     opacity: 0.7,
   },
+  waitingWrapper: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+    minHeight: "60vh",
+    gap: "24px",
+  },
+  pulseOrb: {
+    width: "48px",
+    height: "48px",
+    borderRadius: "50%",
+    background: "radial-gradient(circle, rgba(255, 71, 87, 0.6), rgba(255, 71, 87, 0.1))",
+    animation: "killerPulse 2s ease-in-out infinite",
+  },
   waitingText: {
     fontSize: "18px",
     color: "var(--text-secondary)",
     textAlign: "center",
-    marginTop: "40vh",
+    fontStyle: "italic",
   },
+};
+
+// --- Medic Styles ---
+
+const medicStyles: Record<string, React.CSSProperties> = {
+  container: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    padding: "24px 16px",
+    minHeight: "100vh",
+    gap: "16px",
+    background: "linear-gradient(180deg, #1a1a1a 0%, #152a1a 50%, #101a12 100%)",
+  },
+  heading: {
+    fontSize: "22px",
+    color: "#2ed573",
+    marginBottom: "0",
+    textAlign: "center",
+    fontWeight: 700,
+    marginTop: "16px",
+  },
+  subtext: {
+    fontSize: "14px",
+    color: "var(--text-secondary)",
+    textAlign: "center",
+    marginBottom: "8px",
+  },
+  playerList: {
+    listStyle: "none",
+    padding: 0,
+    margin: 0,
+    width: "100%",
+    maxWidth: "400px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+  },
+  playerRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "14px 18px",
+    minHeight: "44px",
+    minWidth: "44px",
+    backgroundColor: "rgba(46, 213, 115, 0.06)",
+    borderRadius: "10px",
+    cursor: "pointer",
+    border: "2px solid rgba(46, 213, 115, 0.15)",
+    transition: "border-color 0.2s, background-color 0.2s, box-shadow 0.2s",
+  },
+  playerRowSelected: {
+    borderColor: "#2ed573",
+    backgroundColor: "rgba(46, 213, 115, 0.15)",
+    boxShadow: "0 0 12px rgba(46, 213, 115, 0.25)",
+  },
+  playerName: {
+    fontSize: "16px",
+    color: "var(--text-primary)",
+    fontWeight: 500,
+  },
+  selectedIndicator: {
+    fontSize: "18px",
+  },
+  submitButton: {
+    width: "100%",
+    maxWidth: "400px",
+    minHeight: "44px",
+    minWidth: "44px",
+    padding: "14px 24px",
+    fontSize: "18px",
+    fontWeight: "bold",
+    border: "none",
+    borderRadius: "10px",
+    marginTop: "16px",
+    transition: "background-color 0.2s, box-shadow 0.2s",
+  },
+  submitButtonEnabled: {
+    backgroundColor: "#2ed573",
+    color: "#1a1a1a",
+    cursor: "pointer",
+    boxShadow: "0 4px 16px rgba(46, 213, 115, 0.3)",
+  },
+  submitButtonDisabled: {
+    backgroundColor: "var(--bg-tertiary)",
+    color: "var(--text-secondary)",
+    cursor: "not-allowed",
+    opacity: 0.7,
+  },
+  waitingWrapper: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+    minHeight: "60vh",
+    gap: "24px",
+  },
+  pulseOrb: {
+    width: "48px",
+    height: "48px",
+    borderRadius: "50%",
+    background: "radial-gradient(circle, rgba(46, 213, 115, 0.6), rgba(46, 213, 115, 0.1))",
+    animation: "medicPulse 2s ease-in-out infinite",
+  },
+  waitingText: {
+    fontSize: "18px",
+    color: "var(--text-secondary)",
+    textAlign: "center",
+    fontStyle: "italic",
+  },
+};
+
+// --- Civilian Styles ---
+
+const styles: Record<string, React.CSSProperties> = {
   cinematicContainer: {
     display: "flex",
     flexDirection: "column",
