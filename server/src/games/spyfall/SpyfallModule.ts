@@ -106,8 +106,11 @@ export class SpyfallModule implements GameModule {
     this.startRoundTimer();
 
     // Emit turnStarted with first questioner
+    const firstQuestioner = this.turnOrder[this.currentTurnIndex];
+    const firstQuestionerPlayer = context.getPlayers().find((p) => p.id === firstQuestioner);
     context.emitToRoom("turnStarted", {
-      currentQuestioner: this.turnOrder[this.currentTurnIndex],
+      questioner: firstQuestioner,
+      questionerName: firstQuestionerPlayer?.name ?? "Unknown",
     });
   }
 
@@ -219,8 +222,11 @@ export class SpyfallModule implements GameModule {
         }
         // Emit new turn
         if (this.phase === "question") {
+          const nextQ = this.turnOrder[this.currentTurnIndex];
+          const nextQPlayer = this.context.getPlayers().find((p) => p.id === nextQ);
           this.context.emitToRoom("turnStarted", {
-            currentQuestioner: this.turnOrder[this.currentTurnIndex],
+            questioner: nextQ,
+            questionerName: nextQPlayer?.name ?? "Unknown",
           });
         }
       }
@@ -421,8 +427,11 @@ export class SpyfallModule implements GameModule {
       attempts++;
     }
 
+    const advancedQ = this.turnOrder[this.currentTurnIndex];
+    const advancedQPlayer = this.context.getPlayers().find((p) => p.id === advancedQ);
     this.context.emitToRoom("turnStarted", {
-      currentQuestioner: this.turnOrder[this.currentTurnIndex],
+      questioner: advancedQ,
+      questionerName: advancedQPlayer?.name ?? "Unknown",
     });
   }
 

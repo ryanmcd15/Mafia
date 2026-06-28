@@ -155,7 +155,7 @@ describe("SpyfallModule - Property-Based Tests", () => {
               (e) => e.event === "turnStarted"
             );
             let currentQuestioner = (firstTurnEvent?.payload as any)
-              ?.currentQuestioner;
+              ?.questioner;
             questionerCounts.set(
               currentQuestioner,
               (questionerCounts.get(currentQuestioner) ?? 0) + 1
@@ -179,7 +179,7 @@ describe("SpyfallModule - Property-Based Tests", () => {
               );
               const latestTurnEvent = turnEvents[turnEvents.length - 1];
               currentQuestioner = (latestTurnEvent.payload as any)
-                .currentQuestioner;
+                .questioner;
               questionerCounts.set(
                 currentQuestioner,
                 (questionerCounts.get(currentQuestioner) ?? 0) + 1
