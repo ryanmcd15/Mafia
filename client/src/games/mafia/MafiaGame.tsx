@@ -64,7 +64,7 @@ function MafiaRouter(): React.JSX.Element {
     phase != null &&
     phase !== GamePhase.RoleReveal &&
     phase !== GamePhase.GameOver &&
-    myPlayer?.isAlive;
+    (myPlayer == null || myPlayer.isAlive);
 
   // Eliminated players see the spectator view regardless of current phase
   if (myPlayer && !myPlayer.isAlive) {
