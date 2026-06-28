@@ -63,7 +63,6 @@ export interface GameStore {
   isConnected: boolean;
   disconnectedAt: number | null;
   voteHistory: Array<{ round: number; votes: Record<string, string> }>;
-  accusationResults: Record<string, number> | null;
   round: number;
   medicFeedback: string | null;
 }

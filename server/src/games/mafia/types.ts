@@ -46,8 +46,6 @@ export interface GameState {
     round: number;
     votes: Record<string, string>; // voterName -> targetName (or "Skip")
   }>;
-  accusations: Map<string, string>; // accuserId -> targetId (anonymous suspicion during Discussion)
-  accusationResults: Record<string, number> | null; // targetName -> accusation count (revealed to all)
   round: number; // Current round number
 }
 

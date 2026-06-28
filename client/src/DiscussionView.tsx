@@ -10,10 +10,8 @@ export function formatTime(seconds: number): string {
 }
 
 export function DiscussionView(): React.JSX.Element {
-  const { players, myPlayer, roomCode, voteHistory, accusationResults, round } = useGameStore();
+  const { players, myPlayer, voteHistory, round } = useGameStore();
   const [timeLeft, setTimeLeft] = useState(120);
-  const [accusationTarget, setAccusationTarget] = useState<string | null>(null);
-  const [accusationSubmitted, setAccusationSubmitted] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -23,15 +21,6 @@ export function DiscussionView(): React.JSX.Element {
   }, []);
 
   const livingPlayers: Player[] = players.filter((p) => p.isAlive);
-  const accusationTargets: Player[] = players.filter(
-    (p) => p.isAlive && p.id !== myPlayer?.id
-  );
-
-  function handleSubmitAccusation() {
-    if (!accusationTarget) return;
-    socket.emit("gameEvent", { type: "accusation", data: { targetId: accusationTarget } });
-    setAccusationSubmitted(true);
-  }
 
   return (
     <div style={styles.container}>
@@ -44,66 +33,6 @@ export function DiscussionView(): React.JSX.Element {
       <div aria-label="Discussion time remaining" style={styles.timer}>
         {formatTime(timeLeft)}
       </div>
-
-      {/* Anonymous Accusation Section */}
-      {myPlayer?.isAlive && !accusationSubmitted && !accusationResults && (
-        <div style={styles.section}>
-          <h2 style={styles.sectionTitle}>Who do you suspect?</h2>
-          <p style={styles.sectionSubtext}>Anonymous — no one will know who accused whom</p>
-          <ul style={styles.list}>
-            {accusationTargets.map((player) => (
-              <li key={player.id} style={{ marginBottom: "8px" }}>
-                <button
-                  onClick={() => setAccusationTarget(player.id)}
-                  style={{
-                    ...styles.selectButton,
-                    ...(accusationTarget === player.id ? styles.selectButtonActive : {}),
-                  }}
-                >
-                  {player.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-          <button
-            onClick={handleSubmitAccusation}
-            disabled={!accusationTarget}
-            style={{
-              ...styles.submitButton,
-              opacity: accusationTarget ? 1 : 0.5,
-              cursor: accusationTarget ? "pointer" : "not-allowed",
-            }}
-          >
-            Submit Suspicion
-          </button>
-        </div>
-      )}
-
-      {/* Accusation submitted waiting */}
-      {accusationSubmitted && !accusationResults && (
-        <div style={styles.section}>
-          <p style={styles.waitingText}>Suspicion submitted. Waiting for others...</p>
-        </div>
-      )}
-
-      {/* Accusation Results */}
-      {accusationResults && (
-        <div style={styles.section}>
-          <h2 style={styles.sectionTitle}>Suspicion Results</h2>
-          <ul style={styles.list}>
-            {Object.entries(accusationResults)
-              .sort(([, a], [, b]) => b - a)
-              .map(([name, count]) => (
-                <li key={name} style={styles.resultRow}>
-                  <span style={styles.resultName}>{name}</span>
-                  <span style={styles.resultCount}>
-                    {count} {count === 1 ? "suspect" : "suspects"}
-                  </span>
-                </li>
-              ))}
-          </ul>
-        </div>
-      )}
 
       {/* Living Players List */}
       <div style={styles.section}>
@@ -186,12 +115,6 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: "uppercase",
     letterSpacing: "0.05em",
   },
-  sectionSubtext: {
-    fontSize: "0.8rem",
-    color: "var(--text-secondary)",
-    marginBottom: "12px",
-    fontStyle: "italic",
-  },
   list: {
     listStyle: "none",
     padding: 0,
@@ -204,59 +127,6 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: "8px",
     color: "var(--text-primary)",
     fontSize: "1rem",
-  },
-  selectButton: {
-    width: "100%",
-    minHeight: "44px",
-    padding: "12px 16px",
-    fontSize: "1rem",
-    color: "var(--text-primary)",
-    backgroundColor: "var(--bg-secondary)",
-    border: "2px solid transparent",
-    borderRadius: "8px",
-    cursor: "pointer",
-    textAlign: "left" as const,
-    transition: "border-color 0.15s, background-color 0.15s",
-  },
-  selectButtonActive: {
-    borderColor: "var(--accent)",
-    backgroundColor: "var(--bg-tertiary)",
-  },
-  submitButton: {
-    width: "100%",
-    minHeight: "44px",
-    padding: "12px 24px",
-    fontSize: "1rem",
-    fontWeight: 600,
-    borderRadius: "8px",
-    border: "none",
-    backgroundColor: "var(--accent)",
-    color: "#fff",
-    marginTop: "12px",
-  },
-  waitingText: {
-    color: "var(--text-secondary)",
-    fontStyle: "italic",
-    textAlign: "center" as const,
-  },
-  resultRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "12px 16px",
-    backgroundColor: "var(--bg-secondary)",
-    borderRadius: "8px",
-    marginBottom: "8px",
-  },
-  resultName: {
-    fontSize: "1rem",
-    color: "var(--text-primary)",
-    fontWeight: 600,
-  },
-  resultCount: {
-    fontSize: "0.875rem",
-    color: "var(--accent)",
-    fontWeight: 600,
   },
   historyRound: {
     marginBottom: "16px",

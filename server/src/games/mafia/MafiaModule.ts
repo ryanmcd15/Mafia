@@ -85,8 +85,6 @@ export class MafiaModule implements GameModule {
       roleAcknowledgements: new Set(),
       narrationCompletes: new Set(),
       voteHistory: [],
-      accusations: new Map(),
-      accusationResults: null,
       round: 1,
     };
 
@@ -140,9 +138,7 @@ export class MafiaModule implements GameModule {
       case "narrationComplete":
         this.handleNarrationComplete(socketId);
         break;
-      case "accusation":
-        this.handleAccusation(socketId, payload as { targetId: string });
-        break;
+
       case "startDiscussionTimer":
         this.handleStartDiscussionTimer(socketId, payload as { duration?: number });
         break;
@@ -204,10 +200,6 @@ export class MafiaModule implements GameModule {
       state.narration = this.lastNarration.segments;
       state.eliminatedPlayerId = this.lastNarration.eliminatedPlayerId;
       state.wasSaved = this.lastNarration.wasSaved;
-    }
-
-    if (this.room.phase === GamePhase.Discussion) {
-      state.accusations = this.room.gameState?.accusationResults ?? null;
     }
 
     if (this.room.phase === GamePhase.Voting) {
@@ -358,35 +350,7 @@ export class MafiaModule implements GameModule {
     this.checkAllNarrationComplete();
   }
 
-  private handleAccusation(
-    socketId: string,
-    payload: { targetId: string }
-  ): void {
-    if (!this.room?.gameState) return;
-    if (this.room.phase !== GamePhase.Discussion) return;
 
-    const player = this.room.players.get(socketId);
-    if (!player || !player.isAlive) return;
-
-    // Record the accusation (one per player, overwrites previous)
-    this.room.gameState.accusations.set(socketId, payload.targetId);
-
-    this.context?.emitToRoom("accusationUpdate", {
-      accuserId: socketId,
-      targetId: payload.targetId,
-    });
-
-    // Auto-advance to voting if all alive players have submitted accusations
-    const alivePlayers = Array.from(this.room.players.values()).filter(
-      (p) => p.isAlive && p.isConnected
-    );
-    const allAccused = alivePlayers.every(
-      (p) => this.room!.gameState!.accusations.has(p.id)
-    );
-    if (allAccused) {
-      this.onDiscussionExpire();
-    }
-  }
 
   private handleStartDiscussionTimer(
     socketId: string,
@@ -417,8 +381,7 @@ export class MafiaModule implements GameModule {
     // Only the host can skip discussion
     if (socketId !== this.room.hostId) return;
 
-    // Immediately transition to voting
-    this.onDiscussionExpire();
+    this.transitionToVoting();
   }
 
   private handleSubmitVote(
@@ -561,10 +524,6 @@ export class MafiaModule implements GameModule {
   private transitionToDiscussion(): void {
     if (!this.room?.gameState) return;
 
-    // Clear accusations for new discussion
-    this.room.gameState.accusations.clear();
-    this.room.gameState.accusationResults = null;
-
     this.phaseController.transitionTo(
       this.room,
       GamePhase.Discussion,
@@ -576,32 +535,10 @@ export class MafiaModule implements GameModule {
 
   private onDiscussionExpire(): void {
     if (!this.room?.gameState) return;
-
-    // Tally accusations for reveal
-    this.tallyAccusations();
-
-    // Wait 4 seconds for players to see accusation results, then transition to Voting
-    setTimeout(() => {
-      this.transitionToVoting();
-    }, 4000);
+    this.transitionToVoting();
   }
 
-  private tallyAccusations(): void {
-    if (!this.room?.gameState) return;
 
-    const room = this.room;
-    const counts: Record<string, number> = {};
-    for (const targetId of room.gameState!.accusations.values()) {
-      const target: Player | undefined = room.players.get(targetId);
-      if (target) {
-        const name = target.name;
-        counts[name] = (counts[name] ?? 0) + 1;
-      }
-    }
-    room.gameState!.accusationResults = counts;
-
-    this.context?.emitToRoom("accusationResults", { results: counts });
-  }
 
   private transitionToVoting(): void {
     if (!this.room?.gameState) return;
