@@ -8,6 +8,8 @@ export function VotingView(): React.JSX.Element {
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
+  const [voteCount, setVoteCount] = useState(0);
+  const [votedForName, setVotedForName] = useState<string | null>(null);
 
   // Countdown timer
   useEffect(() => {
@@ -17,22 +19,37 @@ export function VotingView(): React.JSX.Element {
     return () => clearInterval(interval);
   }, []);
 
+  // Listen for voteRecorded events to track progress
+  useEffect(() => {
+    function onVoteRecorded(_data: { voterId: string; voterName: string }) {
+      setVoteCount((prev) => prev + 1);
+    }
+    socket.on("voteRecorded", onVoteRecorded);
+    return () => {
+      socket.off("voteRecorded", onVoteRecorded);
+    };
+  }, []);
+
   const minutes = String(Math.floor(timeLeft / 60)).padStart(2, "0");
   const seconds = String(timeLeft % 60).padStart(2, "0");
 
   // Living players excluding self
-  const targets: Player[] = players.filter(
-    (p) => p.id !== myPlayer?.id && p.isAlive
+  const alivePlayers: Player[] = players.filter((p) => p.isAlive);
+  const targets: Player[] = alivePlayers.filter(
+    (p) => p.id !== myPlayer?.id
   );
 
   function handleSubmit() {
     if (!selectedTargetId) return;
+    const target = targets.find((p) => p.id === selectedTargetId);
     socket.emit("gameEvent", { type: "submitVote", data: { targetId: selectedTargetId } });
+    setVotedForName(target?.name ?? null);
     setSubmitted(true);
   }
 
   function handleSkipVote() {
     socket.emit("gameEvent", { type: "skipVote", data: {} });
+    setVotedForName(null);
     setSubmitted(true);
   }
 
@@ -86,7 +103,25 @@ export function VotingView(): React.JSX.Element {
           >
             Vote submitted!
           </p>
-          <p style={{ color: "var(--text-secondary)" }}>
+          {votedForName ? (
+            <p style={{ color: "var(--text-primary)", marginBottom: "12px" }}>
+              You voted to eliminate: <strong>{votedForName}</strong>
+            </p>
+          ) : (
+            <p style={{ color: "var(--text-secondary)", marginBottom: "12px" }}>
+              You skipped your vote.
+            </p>
+          )}
+          <p
+            style={{
+              color: "var(--text-secondary)",
+              fontSize: "14px",
+            }}
+            aria-live="polite"
+          >
+            {voteCount} of {alivePlayers.length} voted
+          </p>
+          <p style={{ color: "var(--text-secondary)", marginTop: "8px" }}>
             Waiting for others...
           </p>
         </div>
