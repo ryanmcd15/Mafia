@@ -562,11 +562,10 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
   },
   gameCardUnavailable: {
-    backgroundColor: "rgba(30, 41, 59, 0.4)",
-    opacity: 0.55,
+    backgroundColor: "rgba(30, 41, 59, 0.75)",
+    opacity: 0.85,
     cursor: "not-allowed",
     boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2)",
-    filter: "grayscale(0.4)",
   },
   gameCardClickable: {
     cursor: "pointer",
