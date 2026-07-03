@@ -10,6 +10,7 @@ import { TwoTruthsOneLieModule } from "./games/two-truths-one-lie/TwoTruthsOneLi
 import { SpyfallModule } from "./games/spyfall/SpyfallModule.js";
 import { BattleShitsModule } from "./games/battle-shits/BattleShitsModule.js";
 import { GuessWhoModule } from "./games/guess-who/GuessWhoModule.js";
+import { FakeArtistModule } from "./games/fake-artist/FakeArtistModule.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -38,6 +39,7 @@ platform.registerGame("two-truths-one-lie", () => new TwoTruthsOneLieModule(), n
 platform.registerGame("spyfall", () => new SpyfallModule(), new SpyfallModule().config);
 platform.registerGame("battle-shits", () => new BattleShitsModule(), new BattleShitsModule().config);
 platform.registerGame("guess-who", () => new GuessWhoModule(), new GuessWhoModule().config);
+platform.registerGame("fake-artist", () => new FakeArtistModule(), new FakeArtistModule().config);
 
 const PORT = process.env.PORT ?? 3000;
 
