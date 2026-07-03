@@ -47,6 +47,11 @@ function injectKeyframes() {
     @keyframes gw-pulse  { 0%,100% { box-shadow:0 0 8px rgba(99,102,241,.4); } 50% { box-shadow:0 0 20px rgba(99,102,241,.8); } }
     @keyframes gw-bounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
     @keyframes gw-pop    { 0% { transform:scale(0.8); opacity:0; } 100% { transform:scale(1); opacity:1; } }
+    @keyframes gw-glow   { 0%,100% { box-shadow:0 0 6px rgba(251,191,36,.3); } 50% { box-shadow:0 0 18px rgba(251,191,36,.7); } }
+    @keyframes gw-pillPulse { 0%,100% { box-shadow:0 0 4px rgba(251,191,36,.2); } 50% { box-shadow:0 0 14px rgba(251,191,36,.6); } }
+    @keyframes gw-btnPulse { 0%,100% { box-shadow:0 0 8px rgba(34,197,94,.3); } 50% { box-shadow:0 0 24px rgba(34,197,94,.7); } }
+    @keyframes gw-spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+    @keyframes gw-shimmer { 0% { background-position:200% center; } 100% { background-position:-200% center; } }
   `;
   document.head.appendChild(s);
 }
@@ -401,6 +406,7 @@ interface PickPhaseProps {
 
 const PickPhase: React.FC<PickPhaseProps> = ({ gameState, onToast }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const hasPicked = gameState.myPick !== null;
 
   function handleConfirmPick() {
@@ -408,36 +414,71 @@ const PickPhase: React.FC<PickPhaseProps> = ({ gameState, onToast }) => {
     socket.emit("gameEvent", { type: "pickPerson", payload: { photoId: selectedId } });
   }
 
+  // Find the picked photo for the waiting state
+  const pickedPhoto = hasPicked
+    ? gameState.photos.find((p) => p.id === gameState.myPick)
+    : null;
+
   return (
     <div style={S.container}>
+      {/* Secrecy banner */}
+      <div style={{
+        width: "100%",
+        textAlign: "center",
+        padding: "8px 16px",
+        borderRadius: "12px",
+        background: "rgba(251,191,36,.08)",
+        border: "1px solid rgba(251,191,36,.2)",
+        animation: "gw-fadeIn .5s ease-out",
+      }}>
+        <span style={{ fontSize: "0.85rem", color: "#fbbf24", fontWeight: 600 }}>
+          🙈 Don't let anyone see your screen!
+        </span>
+      </div>
+
+      {/* Header */}
       <div style={{ textAlign: "center", animation: "gw-fadeIn .5s ease-out" }}>
-        <h1 style={S.title}>🔍 Pick Your Person</h1>
-        <p style={S.subtitle}>
+        <div style={{ fontSize: "3rem", marginBottom: "8px" }}>🕵️‍♂️</div>
+        <h1 style={{
+          fontSize: "2rem",
+          fontWeight: 900,
+          margin: "0 0 6px",
+          letterSpacing: "-0.02em",
+          background: "linear-gradient(135deg, #e2e8f0, #818cf8, #c084fc)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+        }}>
+          Pick Your Person
+        </h1>
+        <p style={{ fontSize: "0.95rem", color: "#94a3b8", margin: 0 }}>
           {hasPicked
-            ? "Waiting for opponent to pick..."
-            : "Secretly choose one photo as your person"}
+            ? "🎯 Locked in! Now we wait..."
+            : "🤫 This is top secret! Choose wisely..."}
         </p>
       </div>
 
-      {/* Status */}
-      <div style={S.card}>
+      {/* Status pills */}
+      <div style={{ ...S.card, padding: "12px 16px" }}>
         <p style={S.sectionLabel}>STATUS</p>
-        <div style={{ display: "flex", gap: "10px" }}>
+        <div style={{ display: "flex", gap: "12px" }}>
           <span style={{
-            padding: "4px 12px", borderRadius: "20px", fontSize: "13px",
-            background: hasPicked ? "rgba(34,197,94,.2)" : "rgba(30,41,59,.8)",
-            border: `1px solid ${hasPicked ? "#22c55e" : "rgba(148,163,184,.2)"}`,
-            color: hasPicked ? "#4ade80" : "#94a3b8",
+            padding: "8px 16px", borderRadius: "24px", fontSize: "14px", fontWeight: 700,
+            background: hasPicked ? "rgba(34,197,94,.15)" : "rgba(251,191,36,.1)",
+            border: `2px solid ${hasPicked ? "#22c55e" : "rgba(251,191,36,.4)"}`,
+            color: hasPicked ? "#4ade80" : "#fbbf24",
+            animation: hasPicked ? "none" : "gw-pillPulse 2s ease-in-out infinite",
           }}>
-            You {hasPicked ? "✓" : "…"}
+            🙋 You {hasPicked ? "✓" : "…"}
           </span>
           <span style={{
-            padding: "4px 12px", borderRadius: "20px", fontSize: "13px",
-            background: gameState.opponentHasPicked ? "rgba(34,197,94,.2)" : "rgba(30,41,59,.8)",
-            border: `1px solid ${gameState.opponentHasPicked ? "#22c55e" : "rgba(148,163,184,.2)"}`,
-            color: gameState.opponentHasPicked ? "#4ade80" : "#94a3b8",
+            padding: "8px 16px", borderRadius: "24px", fontSize: "14px", fontWeight: 700,
+            background: gameState.opponentHasPicked ? "rgba(34,197,94,.15)" : "rgba(251,191,36,.1)",
+            border: `2px solid ${gameState.opponentHasPicked ? "#22c55e" : "rgba(251,191,36,.4)"}`,
+            color: gameState.opponentHasPicked ? "#4ade80" : "#fbbf24",
+            animation: gameState.opponentHasPicked ? "none" : "gw-pillPulse 2s ease-in-out infinite",
           }}>
-            Opponent {gameState.opponentHasPicked ? "✓" : "…"}
+            🕵️ Opponent {gameState.opponentHasPicked ? "✓" : "…"}
           </span>
         </div>
       </div>
@@ -448,23 +489,65 @@ const PickPhase: React.FC<PickPhaseProps> = ({ gameState, onToast }) => {
           <div style={S.card}>
             <p style={S.sectionLabel}>TAP TO SELECT YOUR PERSON</p>
             <div style={S.photoGrid}>
-              {gameState.photos.map((photo) => (
-                <div
-                  key={photo.id}
-                  onClick={() => setSelectedId(photo.id)}
-                  style={{
-                    ...S.photoCell,
-                    border: selectedId === photo.id
-                      ? "2px solid #818cf8"
-                      : "2px solid transparent",
-                    boxShadow: selectedId === photo.id
-                      ? "0 0 12px rgba(99,102,241,.5)"
-                      : "none",
-                  }}
-                >
-                  <img src={photo.dataUrl} alt="pick option" style={S.photoImg} />
-                </div>
-              ))}
+              {gameState.photos.map((photo) => {
+                const isSelected = selectedId === photo.id;
+                const isHovered = hoveredId === photo.id;
+                return (
+                  <div
+                    key={photo.id}
+                    onClick={() => setSelectedId(photo.id)}
+                    onMouseEnter={() => setHoveredId(photo.id)}
+                    onMouseLeave={() => setHoveredId(null)}
+                    style={{
+                      ...S.photoCell,
+                      transform: isSelected ? "scale(1.05)" : isHovered ? "scale(1.03)" : "scale(1)",
+                      border: isSelected
+                        ? "2px solid #fbbf24"
+                        : "2px solid transparent",
+                      boxShadow: isSelected
+                        ? "0 0 16px rgba(251,191,36,.6), inset 0 0 4px rgba(251,191,36,.2)"
+                        : isHovered
+                        ? "0 0 10px rgba(99,102,241,.4)"
+                        : "none",
+                      animation: isSelected ? "gw-glow 2s ease-in-out infinite" : "none",
+                      zIndex: isSelected ? 2 : isHovered ? 1 : 0,
+                    }}
+                  >
+                    <img src={photo.dataUrl} alt="pick option" style={S.photoImg} />
+                    {/* Selected badge */}
+                    {isSelected && (
+                      <div style={{
+                        position: "absolute",
+                        top: "2px",
+                        right: "2px",
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        background: "linear-gradient(135deg, #fbbf24, #f59e0b)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "11px",
+                        boxShadow: "0 2px 6px rgba(251,191,36,.5)",
+                      }}>
+                        ✓
+                      </div>
+                    )}
+                    {/* Sparkle overlay for selected */}
+                    {isSelected && (
+                      <div style={{
+                        position: "absolute",
+                        top: "2px",
+                        left: "2px",
+                        fontSize: "12px",
+                        filter: "drop-shadow(0 0 2px rgba(251,191,36,.8))",
+                      }}>
+                        ✨
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -473,16 +556,71 @@ const PickPhase: React.FC<PickPhaseProps> = ({ gameState, onToast }) => {
             disabled={!selectedId}
             style={{
               ...S.bigBtn,
+              padding: "18px 24px",
+              fontSize: "1.15rem",
               background: selectedId
-                ? "linear-gradient(135deg, #15803d, #22c55e)"
+                ? "linear-gradient(135deg, #15803d, #22c55e, #4ade80)"
                 : "rgba(30,41,59,.5)",
               opacity: selectedId ? 1 : 0.5,
               cursor: selectedId ? "pointer" : "not-allowed",
+              animation: selectedId ? "gw-btnPulse 2s ease-in-out infinite" : "none",
+              transition: "all .2s ease",
             }}
           >
-            ✅ Confirm Pick
+            🔒 Lock In My Pick
           </button>
         </>
+      )}
+
+      {/* Waiting state after picking */}
+      {hasPicked && (
+        <div style={{
+          ...S.card,
+          textAlign: "center",
+          padding: "24px",
+          animation: "gw-fadeIn .5s ease-out",
+        }}>
+          <p style={{ color: "#94a3b8", fontSize: "0.9rem", margin: "0 0 12px" }}>
+            Your secret person is...
+          </p>
+          {pickedPhoto && (
+            <div style={{
+              width: "120px",
+              height: "120px",
+              borderRadius: "16px",
+              overflow: "hidden",
+              margin: "0 auto 16px",
+              border: "3px solid #fbbf24",
+              boxShadow: "0 0 20px rgba(251,191,36,.4)",
+              animation: "gw-glow 2s ease-in-out infinite",
+            }}>
+              <img src={pickedPhoto.dataUrl} alt="your pick" style={S.photoImg} />
+            </div>
+          )}
+          <p style={{ color: "#e2e8f0", fontWeight: 700, fontSize: "1rem", margin: "0 0 16px" }}>
+            🤫 Keep it secret!
+          </p>
+          {!gameState.opponentHasPicked && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+              <div style={{
+                width: "16px",
+                height: "16px",
+                border: "2px solid #818cf8",
+                borderTopColor: "transparent",
+                borderRadius: "50%",
+                animation: "gw-spin 1s linear infinite",
+              }} />
+              <span style={{ color: "#94a3b8", fontSize: "0.85rem" }}>
+                Waiting for opponent to pick...
+              </span>
+            </div>
+          )}
+          {gameState.opponentHasPicked && (
+            <p style={{ color: "#4ade80", fontWeight: 700, fontSize: "0.9rem", margin: 0 }}>
+              ✅ Both players ready! Starting game...
+            </p>
+          )}
+        </div>
       )}
     </div>
   );
