@@ -249,13 +249,13 @@ export function GameSelectionScreen(): React.JSX.Element {
                 <div style={styles.gameCardInner}>
                   <div style={{
                     ...styles.gameEmoji,
-                    opacity: available ? 1 : 0.4,
+                    opacity: available ? 1 : 0.7,
                   }}>
                     {getGameEmoji(game.id)}
                   </div>
                   <h3 style={{
                     ...styles.gameName,
-                    color: available ? "#e2e8f0" : "#64748b",
+                    color: available ? "#e2e8f0" : "#94a3b8",
                   }}>
                     {game.name}
                   </h3>
