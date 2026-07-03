@@ -8,6 +8,7 @@ import { MafiaModule } from "./games/mafia/MafiaModule.js";
 import { TruthOrDareModule } from "./games/truth-or-dare/TruthOrDareModule.js";
 import { TwoTruthsOneLieModule } from "./games/two-truths-one-lie/TwoTruthsOneLieModule.js";
 import { SpyfallModule } from "./games/spyfall/SpyfallModule.js";
+import { BattleShitsModule } from "./games/battle-shits/BattleShitsModule.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -34,6 +35,7 @@ platform.registerGame("mafia", () => new MafiaModule(), new MafiaModule().config
 platform.registerGame("truth-or-dare", () => new TruthOrDareModule(), new TruthOrDareModule().config);
 platform.registerGame("two-truths-one-lie", () => new TwoTruthsOneLieModule(), new TwoTruthsOneLieModule().config);
 platform.registerGame("spyfall", () => new SpyfallModule(), new SpyfallModule().config);
+platform.registerGame("battle-shits", () => new BattleShitsModule(), new BattleShitsModule().config);
 
 const PORT = process.env.PORT ?? 3000;
 

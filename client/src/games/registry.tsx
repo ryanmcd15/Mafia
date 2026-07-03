@@ -4,6 +4,7 @@ import { MafiaGame } from "./mafia/MafiaGame";
 import { TruthOrDareGame } from "./truth-or-dare/TruthOrDareGame";
 import { SpyfallGame } from "./spyfall/SpyfallGame";
 import { TwoTruthsOneLieGame } from "./two-truths-one-lie/TwoTruthsOneLieGame";
+import { BattleShitsGame } from "./battle-shits/BattleShitsGame";
 
 export interface GameUIProps {
   roomCode: string;
@@ -23,6 +24,7 @@ const gameUIModules: GameUIModule[] = [
   { id: "truth-or-dare", component: TruthOrDareGame, icon: "🎯" },
   { id: "two-truths-one-lie", component: TwoTruthsOneLieGame, icon: "🤥" },
   { id: "spyfall", component: SpyfallGame, icon: "🕵️" },
+  { id: "battle-shits", component: BattleShitsGame, icon: "💩" },
 ];
 
 const registry = new Map<string, GameUIModule>(
