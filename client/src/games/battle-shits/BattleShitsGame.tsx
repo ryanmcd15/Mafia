@@ -24,18 +24,102 @@ function injectKeyframes() {
   s.textContent = `
     @keyframes bs-fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
     @keyframes bs-pulse  { 0%,100% { box-shadow:0 0 8px rgba(99,102,241,.4); } 50% { box-shadow:0 0 20px rgba(99,102,241,.8); } }
-    @keyframes bs-sunk   { 0% { transform:scale(1); opacity:1; } 50% { transform:scale(1.4); opacity:.6; } 100% { transform:scale(1); opacity:1; } }
+    @keyframes bs-sunk   { 0% { transform:scale(1); } 50% { transform:scale(1.15); } 100% { transform:scale(1); } }
     @keyframes bs-bounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
+    @keyframes bs-splash { 0% { opacity:1; transform:scale(0.5); } 100% { opacity:0.7; transform:scale(1); } }
   `;
   document.head.appendChild(s);
 }
 
+/* ─── Poop color palette per type ─────────────────────────────── */
+const POOP_COLORS: Record<PoopType, { fill: string; stroke: string; dark: string }> = {
+  tiny:    { fill: "#a16207", stroke: "#78350f", dark: "#451a03" },
+  regular: { fill: "#b45309", stroke: "#92400e", dark: "#451a03" },
+  big:     { fill: "#854d0e", stroke: "#713f12", dark: "#3c1f05" },
+  mega:    { fill: "#78350f", stroke: "#5c2d0a", dark: "#2e1207" },
+};
+
+/* ─── SVG Poop Segment ─────────────────────────────────────────── */
+// Renders an inline SVG poop "segment" for a single cell of a poop model.
+// pos: "start" | "middle" | "end" | "single" (for tiny)
+function PoopSegment({
+  poopType,
+  pos,
+  orientation,
+  isHit,
+  isSunk,
+  cellSize = 28,
+}: {
+  poopType: PoopType;
+  pos: "start" | "middle" | "end" | "single";
+  orientation: "horizontal" | "vertical";
+  isHit: boolean;
+  isSunk: boolean;
+  cellSize?: number;
+}) {
+  const colors = POOP_COLORS[poopType];
+  const fill = isSunk ? "#7f1d1d" : isHit ? "#b45309" : colors.fill;
+  const stroke = isSunk ? "#991b1b" : isHit ? "#92400e" : colors.stroke;
+  const s = cellSize;
+  const pad = 3;
+
+  // Draw a rounded rectangle filling the cell, with slight rounding at ends
+  const isH = orientation === "horizontal";
+  const rx = pos === "single" ? 8
+    : pos === "start" ? (isH ? "8 0 0 8" : "8 8 0 0")
+    : pos === "end"   ? (isH ? "0 8 8 0" : "0 0 8 8")
+    : "0";
+
+  // For start/end use asymmetric border radius via path
+  let path = "";
+  const x = pad, y = pad, w = s - pad * 2, h = s - pad * 2;
+
+  if (pos === "single") {
+    path = `M${x+8},${y} h${w-16} q8,0 8,8 v${h-16} q0,8 -8,8 h${w-16} q-8,0 -8,-8 v${h-16} q0,-8 8,-8 z`;
+  } else if (isH) {
+    if (pos === "start")  path = `M${x+8},${y} h${w-8} v${h} h${-(w-8)} q-8,0 -8,-8 v${h-16} q0,-8 8,-8 z`;
+    else if (pos === "end") path = `M${x},${y} h${w-8} q8,0 8,8 v${h-16} q0,8 -8,8 h${-(w-8)} v${-h} z`;
+    else path = `M${x},${y} h${w} v${h} h${-w} z`;
+  } else {
+    if (pos === "start")  path = `M${x},${y+8} q0,-8 8,-8 h${w-16} q8,0 8,8 v${h-8} h${-w} z`;
+    else if (pos === "end") path = `M${x},${y} h${w} v${h-8} q0,8 -8,8 h${w-16} q-8,0 -8,-8 v${-(h-8)} z`;
+    else path = `M${x},${y} h${w} v${h} h${-w} z`;
+  }
+
+  return (
+    <svg width={s} height={s} style={{ display: "block", flexShrink: 0 }}>
+      <defs>
+        <linearGradient id={`pg-${poopType}-${pos}`} x1="0" y1="0" x2={isH ? "0" : "1"} y2={isH ? "1" : "0"}>
+          <stop offset="0%" stopColor={fill} />
+          <stop offset="100%" stopColor={stroke} />
+        </linearGradient>
+      </defs>
+      <path d={path} fill={`url(#pg-${poopType}-${pos})`} stroke={stroke} strokeWidth="1.5" />
+      {/* Hit marker */}
+      {isHit && !isSunk && (
+        <text x={s/2} y={s/2+5} textAnchor="middle" fontSize="14" fill="#fef08a">✕</text>
+      )}
+      {/* Sunk marker */}
+      {isSunk && (
+        <text x={s/2} y={s/2+5} textAnchor="middle" fontSize="12" fill="#fca5a5">💨</text>
+      )}
+    </svg>
+  );
+}
+
 /* ─── Helpers ─────────────────────────────────────────────────── */
 const POOP_LABELS: Record<PoopType, string> = {
-  tiny: "Tiny 💩",
-  regular: "Regular 💩",
-  big: "Big 💩",
-  mega: "Mega 💩",
+  tiny: "Mini",
+  regular: "Regular",
+  big: "Big",
+  mega: "Mega",
+};
+
+const POOP_NAMES: Record<PoopType, string> = {
+  tiny: "Mini Poop (2)",
+  regular: "Regular Poop (3)",
+  big: "Big Poop (4)",
+  mega: "Mega Poop (5)",
 };
 
 function getCellsForPlacement(
@@ -335,28 +419,34 @@ const PlacementPhase: React.FC<PlacementPhaseProps> = ({
 
   function getCellStyle(cell: Cell): React.CSSProperties {
     const key = cellKey(cell);
-    const isOccupied = occupiedKeys.has(key);
     const isPreview = previewKeys.has(key);
-    const poop = placedPoops.find((p) => p.cells.some((c) => cellKey(c) === key));
-    const isSunk = poop?.sunk ?? false;
 
     let bg = "rgba(30, 41, 59, 0.7)";
     let border = "1px solid rgba(148,163,184,.15)";
-    if (isOccupied) { bg = isSunk ? "#7f1d1d" : "#15803d"; border = "1px solid #22c55e"; }
     if (isPreview) {
-      bg = isPreviewValid ? "rgba(34,197,94,.35)" : "rgba(239,68,68,.35)";
+      bg = isPreviewValid ? "rgba(34,197,94,.15)" : "rgba(239,68,68,.15)";
       border = isPreviewValid ? "1px solid #4ade80" : "1px solid #f87171";
     }
 
     return {
       width: "28px", height: "28px",
       display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: "10px", cursor: selectedType ? "pointer" : "default",
+      cursor: selectedType ? "pointer" : "default",
       backgroundColor: bg, border,
       borderRadius: "3px",
       transition: "background-color .1s",
       userSelect: "none",
+      position: "relative",
+      overflow: "visible",
     };
+  }
+
+  // Determine position of a cell within its poop
+  function getSegmentPos(poop: typeof placedPoops[0], cellIdx: number): "start" | "middle" | "end" | "single" {
+    if (poop.cells.length === 1) return "single";
+    if (cellIdx === 0) return "start";
+    if (cellIdx === poop.cells.length - 1) return "end";
+    return "middle";
   }
 
   return (
@@ -432,7 +522,8 @@ const PlacementPhase: React.FC<PlacementPhaseProps> = ({
             {COLUMNS.map((col) => {
               const cell: Cell = { col, row };
               const poop = placedPoops.find((p) => p.cells.some((c) => cellKey(c) === cellKey(cell)));
-              const cellContent = poop ? (poop.sunk ? "💨" : "💩") : "";
+              const cellIdx = poop ? poop.cells.findIndex((c) => cellKey(c) === cellKey(cell)) : -1;
+              const isPreview = previewKeys.has(cellKey(cell));
               return (
                 <div
                   key={col}
@@ -443,7 +534,20 @@ const PlacementPhase: React.FC<PlacementPhaseProps> = ({
                   role={selectedType ? "button" : undefined}
                   aria-label={`Cell ${col}${row}`}
                 >
-                  {cellContent}
+                  {poop && !isPreview ? (
+                    <PoopSegment
+                      poopType={poop.type}
+                      pos={getSegmentPos(poop, cellIdx)}
+                      orientation={poop.orientation}
+                      isHit={false}
+                      isSunk={poop.sunk}
+                      cellSize={28}
+                    />
+                  ) : isPreview && isPreviewValid ? (
+                    <div style={{ width: 22, height: 22, borderRadius: 4, background: "rgba(34,197,94,.5)" }} />
+                  ) : isPreview ? (
+                    <div style={{ width: 22, height: 22, borderRadius: 4, background: "rgba(239,68,68,.5)" }} />
+                  ) : null}
                 </div>
               );
             })}
@@ -521,56 +625,70 @@ const BattlePhase: React.FC<BattlePhaseProps> = ({
     socket.emit("gameEvent", { type: "flush", payload: { cell: { col: cell.col, row: cell.row } } });
   }
 
-  function myGridCellContent(cell: Cell): string {
+  function myGridCellContent(cell: Cell) {
     const key = cellKey(cell);
     const poop = gameState.myPoops.find((p) => p.cells.some((c) => cellKey(c) === key));
     const marker = gameState.myFlushMarkers[key];
-    if (marker === "hit") return poop?.sunk ? "💨" : "💥";
-    if (marker === "miss") return "🌊";
-    if (poop) return poop.sunk ? "💨" : "💩";
-    return "";
+    const cellIdx = poop ? poop.cells.findIndex((c) => cellKey(c) === key) : -1;
+
+    if (poop) {
+      const pos = cellIdx === 0 ? "start" : cellIdx === poop.cells.length - 1 ? "end" : poop.cells.length === 1 ? "single" : "middle";
+      return (
+        <PoopSegment
+          poopType={poop.type}
+          pos={pos as "start" | "middle" | "end" | "single"}
+          orientation={poop.orientation}
+          isHit={marker === "hit"}
+          isSunk={poop.sunk}
+          cellSize={26}
+        />
+      );
+    }
+    if (marker === "miss") return <span style={{ fontSize: "14px" }}>🌊</span>;
+    return null;
   }
 
   function myGridCellStyle(cell: Cell): React.CSSProperties {
     const key = cellKey(cell);
     const poop = gameState.myPoops.find((p) => p.cells.some((c) => cellKey(c) === key));
     const marker = gameState.myFlushMarkers[key];
-    let bg = "rgba(30,41,59,.7)";
-    if (poop && !marker) bg = poop.sunk ? "#7f1d1d" : "#15803d";
-    if (marker === "hit") bg = poop?.sunk ? "#7f1d1d" : "#b45309";
-    if (marker === "miss") bg = "#1e3a5f";
+    let bg = "rgba(15,23,42,.8)";
+    let border = "1px solid rgba(148,163,184,.12)";
+    if (poop && !marker) { bg = "transparent"; border = "1px solid rgba(148,163,184,.08)"; }
+    if (marker === "hit") { bg = "rgba(220,38,38,.25)"; border = "1px solid #ef4444"; }
+    if (marker === "miss") { bg = "rgba(30,58,138,.4)"; border = "1px solid rgba(59,130,246,.4)"; }
     return {
       width: "26px", height: "26px",
       display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: "11px", backgroundColor: bg,
-      border: "1px solid rgba(148,163,184,.12)",
+      backgroundColor: bg, border,
       borderRadius: "3px", userSelect: "none",
-      animation: marker === "hit" && poop?.sunk ? "bs-sunk .4s ease-out" : "none",
     };
   }
 
-  function opponentGridCellContent(cell: Cell): string {
+  function opponentGridCellContent(cell: Cell) {
     const marker = gameState.opponentFlushMarkers[cellKey(cell)];
-    if (marker === "hit") return "💥";
-    if (marker === "miss") return "🌊";
-    return "";
+    if (marker === "hit") return <span style={{ fontSize: "16px" }}>💥</span>;
+    if (marker === "miss") return <span style={{ fontSize: "14px" }}>🌊</span>;
+    if (isMyTurn) return <span style={{ fontSize: "10px", opacity: 0.3 }}>🚽</span>;
+    return null;
   }
 
   function opponentGridCellStyle(cell: Cell): React.CSSProperties {
     const key = cellKey(cell);
     const marker = gameState.opponentFlushMarkers[key];
     const alreadyFlushed = !!marker;
-    let bg = isMyTurn && !alreadyFlushed ? "rgba(49,58,97,.7)" : "rgba(30,41,59,.7)";
-    if (marker === "hit") bg = "#b45309";
-    if (marker === "miss") bg = "#1e3a5f";
+    let bg = "rgba(15,23,42,.8)";
+    let border = "1px solid rgba(148,163,184,.12)";
+    if (marker === "hit") { bg = "rgba(220,38,38,.3)"; border = "1px solid #f87171"; }
+    else if (marker === "miss") { bg = "rgba(30,58,138,.4)"; border = "1px solid rgba(59,130,246,.4)"; }
+    else if (isMyTurn && !alreadyFlushed) { bg = "rgba(49,58,97,.5)"; border = "1px solid rgba(99,102,241,.4)"; }
     return {
       width: "26px", height: "26px",
       display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: "11px", backgroundColor: bg,
-      border: `1px solid ${isMyTurn && !alreadyFlushed ? "rgba(99,102,241,.3)" : "rgba(148,163,184,.12)"}`,
+      backgroundColor: bg, border,
       borderRadius: "3px", userSelect: "none",
       cursor: isMyTurn && !alreadyFlushed ? "pointer" : "default",
-      transition: "background-color .1s, transform .1s",
+      transition: "background-color .1s",
     };
   }
 
@@ -671,7 +789,7 @@ const BattlePhase: React.FC<BattlePhaseProps> = ({
                 color: sunk ? "#fca5a5" : placed ? "#4ade80" : "#64748b",
                 textDecoration: sunk ? "line-through" : "none",
               }}>
-                {POOP_LABELS[type]} {sunk ? "💨" : placed ? "✓" : "?"}
+                {POOP_NAMES[type]} {sunk ? "💨 SUNK" : placed ? "✓ OK" : "?"}
               </span>
             );
           })}
