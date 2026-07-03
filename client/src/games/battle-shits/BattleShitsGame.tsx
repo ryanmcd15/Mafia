@@ -565,8 +565,7 @@ const PlacementPhase: React.FC<PlacementPhaseProps> = ({
   const existingGroups = placedPoops.map((p) => p.cells);
   const isPreviewValid =
     previewCells !== null &&
-    !cellsOverlap(previewCells, placedPoops.flatMap((p) => p.cells)) &&
-    !hasAdjacencyConflict(previewCells, existingGroups);
+    !cellsOverlap(previewCells, placedPoops.flatMap((p) => p.cells));
 
   function handleCellClick(cell: Cell) {
     if (!selectedType) return;

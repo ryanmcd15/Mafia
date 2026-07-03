@@ -324,14 +324,6 @@ export class BattleShitsModule implements GameModule {
       return;
     }
 
-    // 6. No adjacency (including diagonal) with already-placed poops
-    if (hasAdjacency(cells, allExistingCells)) {
-      this.context.emitToPlayer(socketId, "error", {
-        message: "Poop placement is adjacent to an existing poop.",
-      });
-      return;
-    }
-
     // Valid — store poop
     const placedPoop: PlacedPoop = {
       type,
