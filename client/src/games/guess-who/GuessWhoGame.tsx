@@ -388,7 +388,6 @@ const UploadPhase: React.FC<UploadPhaseProps> = ({ gameState, onToast }) => {
         type="file"
         accept="image/*"
         multiple
-        capture="environment"
         style={{ display: "none" }}
         onChange={(e) => handleFiles(e.target.files)}
       />
