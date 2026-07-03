@@ -41,69 +41,146 @@ const POOP_COLORS: Record<PoopType, { fill: string; stroke: string; dark: string
   mega:    { fill: "#78350f", stroke: "#5c2d0a", dark: "#2e1207" },
 };
 
-/* ─── SVG Poop Segment ─────────────────────────────────────────── */
-// Renders an inline SVG poop "segment" for a single cell of a poop model.
-// pos: "start" | "middle" | "end" | "single" (for tiny)
-function PoopSegment({
+/* ─── Full-poop SVG ───────────────────────────────────────────── */
+// Renders a proper poop shape that spans ALL cells of the poop.
+// Renders as an absolute-positioned element over the grid cells.
+// cellSize: width/height of one grid cell in px
+// cells: ordered list of cells this poop occupies
+function PoopModel({
   poopType,
-  pos,
+  cells,
   orientation,
   isHit,
   isSunk,
+  hitCells,
   cellSize = 28,
+  gap = 2,
 }: {
   poopType: PoopType;
-  pos: "start" | "middle" | "end" | "single";
+  cells: Cell[];
   orientation: "horizontal" | "vertical";
   isHit: boolean;
   isSunk: boolean;
+  hitCells?: string[];
   cellSize?: number;
+  gap?: number;
 }) {
-  const colors = POOP_COLORS[poopType];
-  const fill = isSunk ? "#7f1d1d" : isHit ? "#b45309" : colors.fill;
-  const stroke = isSunk ? "#991b1b" : isHit ? "#92400e" : colors.stroke;
-  const s = cellSize;
-  const pad = 3;
-
-  // Draw a rounded rectangle filling the cell, with slight rounding at ends
+  const n = cells.length;
+  const stride = cellSize + gap; // pixels per cell including gap
   const isH = orientation === "horizontal";
-  const rx = pos === "single" ? 8
-    : pos === "start" ? (isH ? "8 0 0 8" : "8 8 0 0")
-    : pos === "end"   ? (isH ? "0 8 8 0" : "0 0 8 8")
-    : "0";
+  const totalW = isH ? n * stride - gap : cellSize;
+  const totalH = isH ? cellSize : n * stride - gap;
+  const colors = POOP_COLORS[poopType];
 
-  // For start/end use asymmetric border radius via path
-  let path = "";
-  const x = pad, y = pad, w = s - pad * 2, h = s - pad * 2;
+  // Build the poop SVG path — a series of stacked bumps
+  // For horizontal: bumps go left to right; for vertical: top to bottom
+  const bumpR = cellSize * 0.38; // radius of each bump circle
+  const baseH = cellSize * 0.35; // height of the flat base
+  const cx = isH ? (i: number) => i * stride + cellSize / 2 : () => cellSize / 2;
+  const cy = isH ? () => cellSize / 2 - bumpR * 0.2 : (i: number) => i * stride + cellSize / 2;
 
-  if (pos === "single") {
-    path = `M${x+8},${y} h${w-16} q8,0 8,8 v${h-16} q0,8 -8,8 h${w-16} q-8,0 -8,-8 v${h-16} q0,-8 8,-8 z`;
-  } else if (isH) {
-    if (pos === "start")  path = `M${x+8},${y} h${w-8} v${h} h${-(w-8)} q-8,0 -8,-8 v${h-16} q0,-8 8,-8 z`;
-    else if (pos === "end") path = `M${x},${y} h${w-8} q8,0 8,8 v${h-16} q0,8 -8,8 h${-(w-8)} v${-h} z`;
-    else path = `M${x},${y} h${w} v${h} h${-w} z`;
-  } else {
-    if (pos === "start")  path = `M${x},${y+8} q0,-8 8,-8 h${w-16} q8,0 8,8 v${h-8} h${-w} z`;
-    else if (pos === "end") path = `M${x},${y} h${w} v${h-8} q0,8 -8,8 h${w-16} q-8,0 -8,-8 v${-(h-8)} z`;
-    else path = `M${x},${y} h${w} v${h} h${-w} z`;
+  // Build circles for bumps
+  const bumps: JSX.Element[] = [];
+  for (let i = 0; i < n; i++) {
+    const bx = cx(i);
+    const by = cy(i);
+    // Scale bump radius slightly for middle vs end cells
+    const r = i === 0 || i === n - 1 ? bumpR * 0.85 : bumpR;
+    bumps.push(
+      <ellipse key={`b${i}`} cx={bx} cy={by} rx={r} ry={r * 0.9} />
+    );
   }
 
+  // Base trapezoid at bottom/right end
+  const baseColor = isSunk ? "#7f1d1d" : isHit ? "#78350f" : colors.dark;
+  const bodyColor = isSunk ? "#991b1b" : isHit ? "#92400e" : colors.fill;
+
+  // Highlight/shine
+  const shineX = isH ? (n * stride) / 4 : cellSize / 3;
+  const shineY = isH ? cellSize * 0.25 : (n * stride) / 4;
+
+  const id = `pgr-${poopType}-${n}`;
+
   return (
-    <svg width={s} height={s} style={{ display: "block", flexShrink: 0 }}>
+    <svg
+      width={totalW}
+      height={totalH}
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        pointerEvents: "none",
+        zIndex: 2,
+        filter: isSunk ? "grayscale(0.6) brightness(0.6)" : undefined,
+        animation: isSunk ? "bs-sunk 0.5s ease-out" : undefined,
+      }}
+      aria-hidden="true"
+    >
       <defs>
-        <linearGradient id={`pg-${poopType}-${pos}`} x1="0" y1="0" x2={isH ? "0" : "1"} y2={isH ? "1" : "0"}>
-          <stop offset="0%" stopColor={fill} />
-          <stop offset="100%" stopColor={stroke} />
-        </linearGradient>
+        <radialGradient id={id} cx="40%" cy="35%" r="65%">
+          <stop offset="0%" stopColor={colors.fill} stopOpacity="1" />
+          <stop offset="60%" stopColor={colors.stroke} stopOpacity="1" />
+          <stop offset="100%" stopColor={colors.dark} stopOpacity="1" />
+        </radialGradient>
+        <radialGradient id={`${id}hit`} cx="40%" cy="35%" r="65%">
+          <stop offset="0%" stopColor="#ef4444" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#7f1d1d" stopOpacity="0.9" />
+        </radialGradient>
       </defs>
-      <path d={path} fill={`url(#pg-${poopType}-${pos})`} stroke={stroke} strokeWidth="1.5" />
-      {/* Hit marker */}
-      {isHit && !isSunk && (
-        <text x={s/2} y={s/2+5} textAnchor="middle" fontSize="14" fill="#fef08a">✕</text>
+
+      {/* Base */}
+      {isH ? (
+        <rect
+          x={cellSize * 0.1} y={totalH * 0.7}
+          width={totalW - cellSize * 0.2} height={totalH * 0.3}
+          rx={6} ry={6}
+          fill={baseColor} opacity={0.8}
+        />
+      ) : (
+        <rect
+          x={totalW * 0.1} y={cellSize * 0.1}
+          width={totalW * 0.8} height={totalH - cellSize * 0.2}
+          rx={6} ry={6}
+          fill={baseColor} opacity={0.8}
+        />
       )}
-      {/* Sunk marker */}
+
+      {/* Poop bumps */}
+      <g fill={`url(#${id})`} stroke={colors.stroke} strokeWidth="0.8">
+        {bumps}
+      </g>
+
+      {/* Shine highlight */}
+      <ellipse
+        cx={shineX} cy={shineY}
+        rx={bumpR * 0.35} ry={bumpR * 0.2}
+        fill="rgba(255,255,255,0.25)"
+        style={{ pointerEvents: "none" }}
+      />
+
+      {/* Eyes on first bump */}
+      {(() => {
+        const eyeX = cx(0);
+        const eyeY = cy(0);
+        const er = bumpR * 0.18;
+        return (
+          <g fill={colors.dark} opacity={0.9}>
+            <circle cx={eyeX - bumpR * 0.3} cy={eyeY - bumpR * 0.1} r={er} />
+            <circle cx={eyeX + bumpR * 0.3} cy={eyeY - bumpR * 0.1} r={er} />
+          </g>
+        );
+      })()}
+
+      {/* Sunk or hit overlay */}
       {isSunk && (
-        <text x={s/2} y={s/2+5} textAnchor="middle" fontSize="12" fill="#fca5a5">💨</text>
+        <text
+          x={isH ? totalW / 2 : cellSize / 2}
+          y={isH ? totalH / 2 + 6 : (n * stride) / 2 + 6}
+          textAnchor="middle" fontSize={Math.min(cellSize * 0.7, 22)} fill="#fca5a5"
+          style={{ pointerEvents: "none" }}
+        >
+          💨
+        </text>
       )}
     </svg>
   );
@@ -497,7 +574,6 @@ const PlacementPhase: React.FC<PlacementPhaseProps> = ({
     if (cellIdx === poop.cells.length - 1) return "end";
     return "middle";
   }
-
   return (
     <div style={S.container}>
       <div style={{ textAlign: "center", animation: "bs-fadeIn .5s ease-out" }}>
@@ -573,30 +649,33 @@ const PlacementPhase: React.FC<PlacementPhaseProps> = ({
               const poop = placedPoops.find((p) => p.cells.some((c) => cellKey(c) === cellKey(cell)));
               const cellIdx = poop ? poop.cells.findIndex((c) => cellKey(c) === cellKey(cell)) : -1;
               const isPreview = previewKeys.has(cellKey(cell));
+              const isAnchor = cellIdx === 0; // render the model on the first cell only
               return (
                 <div
                   key={col}
-                  style={getCellStyle(cell)}
+                  style={{ ...getCellStyle(cell), position: "relative" }}
                   onClick={() => handleCellClick(cell)}
                   onMouseEnter={() => setHoverCell(cell)}
                   onMouseLeave={() => setHoverCell(null)}
                   role={selectedType ? "button" : undefined}
                   aria-label={`Cell ${col}${row}`}
                 >
-                  {poop && !isPreview ? (
-                    <PoopSegment
+                  {/* Preview indicator */}
+                  {isPreview && !poop && (
+                    <div style={{ width: 20, height: 20, borderRadius: 4, background: isPreviewValid ? "rgba(34,197,94,.5)" : "rgba(239,68,68,.5)" }} />
+                  )}
+                  {/* Poop model renders once on the anchor cell, spans all cells */}
+                  {poop && isAnchor && (
+                    <PoopModel
                       poopType={poop.type}
-                      pos={getSegmentPos(poop, cellIdx)}
+                      cells={poop.cells}
                       orientation={poop.orientation}
                       isHit={false}
                       isSunk={poop.sunk}
                       cellSize={28}
+                      gap={2}
                     />
-                  ) : isPreview && isPreviewValid ? (
-                    <div style={{ width: 22, height: 22, borderRadius: 4, background: "rgba(34,197,94,.5)" }} />
-                  ) : isPreview ? (
-                    <div style={{ width: 22, height: 22, borderRadius: 4, background: "rgba(239,68,68,.5)" }} />
-                  ) : null}
+                  )}
                 </div>
               );
             })}
@@ -679,21 +758,24 @@ const BattlePhase: React.FC<BattlePhaseProps> = ({
     const poop = gameState.myPoops.find((p) => p.cells.some((c) => cellKey(c) === key));
     const marker = gameState.myFlushMarkers[key];
     const cellIdx = poop ? poop.cells.findIndex((c) => cellKey(c) === key) : -1;
+    const isAnchor = cellIdx === 0;
 
-    if (poop) {
-      const pos = cellIdx === 0 ? "start" : cellIdx === poop.cells.length - 1 ? "end" : poop.cells.length === 1 ? "single" : "middle";
+    if (poop && isAnchor) {
       return (
-        <PoopSegment
+        <PoopModel
           poopType={poop.type}
-          pos={pos as "start" | "middle" | "end" | "single"}
+          cells={poop.cells}
           orientation={poop.orientation}
-          isHit={marker === "hit"}
+          isHit={!!marker}
           isSunk={poop.sunk}
+          hitCells={poop.hitCells}
           cellSize={26}
+          gap={2}
         />
       );
     }
-    if (marker === "miss") return <span style={{ fontSize: "14px" }}>🌊</span>;
+    if (marker === "miss" && !poop) return <span style={{ fontSize: "13px" }}>🌊</span>;
+    if (marker === "hit" && !poop) return <span style={{ fontSize: "13px" }}>💥</span>;
     return null;
   }
 
@@ -711,6 +793,7 @@ const BattlePhase: React.FC<BattlePhaseProps> = ({
       display: "flex", alignItems: "center", justifyContent: "center",
       backgroundColor: bg, border,
       borderRadius: "3px", userSelect: "none",
+      position: "relative" as const,
     };
   }
 
