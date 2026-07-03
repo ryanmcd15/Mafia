@@ -227,10 +227,21 @@ export const BattleShitsGame: React.FC<GameUIProps> = ({
       setGameState((prev) => {
         if (!prev) return prev;
         const key = cellKey(data.cell);
-        return {
-          ...prev,
-          opponentFlushMarkers: { ...prev.opponentFlushMarkers, [key]: data.result },
-        };
+        const iAmShooter = prev.activeShooter === myPlayerId;
+
+        if (iAmShooter) {
+          // I fired — update my outgoing markers (what I see on opponent grid)
+          return {
+            ...prev,
+            opponentFlushMarkers: { ...prev.opponentFlushMarkers, [key]: data.result },
+          };
+        } else {
+          // Someone else fired at my grid — update my incoming markers
+          return {
+            ...prev,
+            myFlushMarkers: { ...prev.myFlushMarkers, [key]: data.result },
+          };
+        }
       });
     }
 
@@ -669,7 +680,6 @@ const BattlePhase: React.FC<BattlePhaseProps> = ({
     const marker = gameState.opponentFlushMarkers[cellKey(cell)];
     if (marker === "hit") return <span style={{ fontSize: "16px" }}>💥</span>;
     if (marker === "miss") return <span style={{ fontSize: "14px" }}>🌊</span>;
-    if (isMyTurn) return <span style={{ fontSize: "10px", opacity: 0.3 }}>🚽</span>;
     return null;
   }
 
