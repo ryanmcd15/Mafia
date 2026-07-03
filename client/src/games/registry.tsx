@@ -26,7 +26,7 @@ const gameUIModules: GameUIModule[] = [
   { id: "two-truths-one-lie", component: TwoTruthsOneLieGame, icon: "🤥" },
   { id: "spyfall", component: SpyfallGame, icon: "🕵️" },
   { id: "battle-shits", component: BattleShitsGame, icon: "💩" },
-  { id: "guess-who", component: GuessWhoGame, icon: "🔍" },
+  { id: "guess-who", component: GuessWhoGame, icon: "🕵️‍♂️" },
 ];
 
 const registry = new Map<string, GameUIModule>(

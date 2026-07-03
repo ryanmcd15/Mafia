@@ -52,6 +52,11 @@ function injectKeyframes() {
     @keyframes gw-btnPulse { 0%,100% { box-shadow:0 0 8px rgba(34,197,94,.3); } 50% { box-shadow:0 0 24px rgba(34,197,94,.7); } }
     @keyframes gw-spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
     @keyframes gw-shimmer { 0% { background-position:200% center; } 100% { background-position:-200% center; } }
+    @keyframes gw-float1 { 0%,100% { transform:translate(0,0) rotate(0deg); } 50% { transform:translate(15px,-25px) rotate(15deg); } }
+    @keyframes gw-float2 { 0%,100% { transform:translate(0,0) rotate(0deg); } 50% { transform:translate(-12px,-20px) rotate(-10deg); } }
+    @keyframes gw-float3 { 0%,100% { transform:translate(0,0) rotate(0deg); } 50% { transform:translate(10px,-30px) rotate(8deg); } }
+    @keyframes gw-float4 { 0%,100% { transform:translate(0,0) rotate(0deg); } 50% { transform:translate(-8px,-18px) rotate(-12deg); } }
+    @keyframes gw-float5 { 0%,100% { transform:translate(0,0) rotate(0deg); } 50% { transform:translate(12px,-22px) rotate(6deg); } }
   `;
   document.head.appendChild(s);
 }
@@ -67,6 +72,8 @@ const S: Record<string, React.CSSProperties> = {
     padding: "20px 16px",
     background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)",
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    position: "relative" as const,
+    overflow: "hidden",
   },
   container: {
     width: "100%",
@@ -246,6 +253,17 @@ export const GuessWhoGame: React.FC<GameUIProps> = ({
   /* ── Render ────────────────────────────────────────────────── */
   return (
     <div style={S.root}>
+      {/* Floating question marks background */}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }} aria-hidden="true">
+        <span style={{ position: "absolute", top: "8%", left: "5%", fontSize: "2.5rem", opacity: 0.12, animation: "gw-float1 7s ease-in-out infinite" }}>❓</span>
+        <span style={{ position: "absolute", top: "15%", right: "8%", fontSize: "2rem", opacity: 0.1, animation: "gw-float2 9s ease-in-out infinite" }}>❔</span>
+        <span style={{ position: "absolute", top: "40%", left: "3%", fontSize: "1.8rem", opacity: 0.08, animation: "gw-float3 8s ease-in-out infinite" }}>❓</span>
+        <span style={{ position: "absolute", top: "60%", right: "5%", fontSize: "2.2rem", opacity: 0.1, animation: "gw-float4 10s ease-in-out infinite" }}>❔</span>
+        <span style={{ position: "absolute", top: "75%", left: "10%", fontSize: "1.5rem", opacity: 0.09, animation: "gw-float5 11s ease-in-out infinite" }}>❓</span>
+        <span style={{ position: "absolute", top: "30%", right: "15%", fontSize: "1.6rem", opacity: 0.07, animation: "gw-float1 12s ease-in-out infinite", animationDelay: "2s" }}>🔍</span>
+        <span style={{ position: "absolute", top: "85%", right: "12%", fontSize: "1.4rem", opacity: 0.08, animation: "gw-float3 9s ease-in-out infinite", animationDelay: "3s" }}>🤔</span>
+      </div>
+
       {toast && <div style={S.toast} role="alert" aria-live="assertive">{toast}</div>}
 
       {phase === "upload" && (
