@@ -49,12 +49,15 @@ function injectKeyframes() {
       transition: transform 0.2s ease, box-shadow 0.3s ease, border-color 0.3s ease;
     }
     .gs-game-card:not(:disabled):hover {
-      transform: translateY(-3px) scale(1.01);
+      transform: translateY(-3px) scale(1.02);
       box-shadow: 0 12px 40px rgba(99, 102, 241, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
       border-color: rgba(139, 92, 246, 0.6) !important;
     }
     .gs-game-card:not(:disabled):active {
-      transform: translateY(-1px) scale(0.99);
+      transform: translateY(-1px) scale(0.97);
+    }
+    .gs-game-card:disabled {
+      pointer-events: none;
     }
   `;
   document.head.appendChild(style);
@@ -68,6 +71,7 @@ const GAME_EMOJIS: Record<string, string> = {
   spyfall: "🕵️",
   "battle-shits": "💩",
   "guess-who": "❓",
+  "fake-artist": "🎨",
 };
 
 function getGameEmoji(gameId: string): string {
@@ -231,6 +235,7 @@ export function GameSelectionScreen(): React.JSX.Element {
                 className="gs-game-card"
                 onClick={() => available && handleSelectGame(game.id)}
                 disabled={!isHost || !available}
+                title={game.description}
                 style={{
                   ...styles.gameCard,
                   ...(available ? styles.gameCardAvailable : styles.gameCardUnavailable),
@@ -248,45 +253,30 @@ export function GameSelectionScreen(): React.JSX.Element {
                   }}>
                     {getGameEmoji(game.id)}
                   </div>
-                  <div style={styles.gameCardContent}>
-                    <h3 style={{
-                      ...styles.gameName,
-                      color: available ? "#e2e8f0" : "#64748b",
-                    }}>
-                      {game.name}
-                    </h3>
-                    <p style={{
-                      ...styles.gameDescription,
-                      color: available ? "#94a3b8" : "#475569",
-                    }}>
-                      {game.description}
-                    </p>
-                    <div style={styles.gameFooter}>
-                      <span style={{
-                        ...styles.playerRangePill,
-                        backgroundColor: available
-                          ? "rgba(99, 102, 241, 0.15)"
-                          : "rgba(100, 116, 139, 0.1)",
-                        color: available ? "#a5b4fc" : "#64748b",
-                        borderColor: available
-                          ? "rgba(99, 102, 241, 0.3)"
-                          : "rgba(100, 116, 139, 0.2)",
-                      }}>
-                        👥 {game.minPlayers}–{game.maxPlayers} players
-                      </span>
-                      {!available && (
-                        <span style={styles.needMoreBadge}>
-                          Need {needed}+ more
-                        </span>
-                      )}
-                      {!isHost && available && (
-                        <span style={styles.hostChoosesBadge}>
-                          Host chooses
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                  <h3 style={{
+                    ...styles.gameName,
+                    color: available ? "#e2e8f0" : "#64748b",
+                  }}>
+                    {game.name}
+                  </h3>
+                  <span style={{
+                    ...styles.playerRangePill,
+                    backgroundColor: available
+                      ? "rgba(99, 102, 241, 0.15)"
+                      : "rgba(100, 116, 139, 0.1)",
+                    color: available ? "#a5b4fc" : "#64748b",
+                    borderColor: available
+                      ? "rgba(99, 102, 241, 0.3)"
+                      : "rgba(100, 116, 139, 0.2)",
+                  }}>
+                    👥 {game.minPlayers}–{game.maxPlayers}
+                  </span>
                 </div>
+                {!available && (
+                  <div style={styles.needOverlay}>
+                    Need {needed}+
+                  </div>
+                )}
               </button>
             );
           })}
@@ -543,26 +533,28 @@ const styles: Record<string, React.CSSProperties> = {
     fontStyle: "italic",
   },
   gameGrid: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "14px",
+    display: "grid",
+    gridTemplateColumns: "repeat(2, 1fr)",
+    gap: "12px",
   },
 
   // ─── GAME CARDS ───────────────────────────────────────────────────
   gameCard: {
+    position: "relative",
     display: "flex",
     flexDirection: "column",
-    padding: "20px",
+    padding: "16px 12px",
     borderRadius: "16px",
     border: "1px solid rgba(148, 163, 184, 0.12)",
-    textAlign: "left",
+    textAlign: "center",
     width: "100%",
-    minHeight: "44px",
+    height: "150px",
     fontSize: "inherit",
     fontFamily: "inherit",
     backdropFilter: "blur(12px)",
     animation: "gs-fadeInUp 0.5s ease-out both",
     boxSizing: "border-box",
+    overflow: "hidden",
   },
   gameCardAvailable: {
     backgroundColor: "rgba(30, 41, 59, 0.75)",
@@ -571,9 +563,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   gameCardUnavailable: {
     backgroundColor: "rgba(30, 41, 59, 0.4)",
-    opacity: 0.6,
+    opacity: 0.55,
     cursor: "not-allowed",
     boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2)",
+    filter: "grayscale(0.4)",
   },
   gameCardClickable: {
     cursor: "pointer",
@@ -581,64 +574,45 @@ const styles: Record<string, React.CSSProperties> = {
   },
   gameCardInner: {
     display: "flex",
-    alignItems: "flex-start",
-    gap: "16px",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    flex: 1,
   },
   gameEmoji: {
-    fontSize: "2.4rem",
+    fontSize: "2.6rem",
     flexShrink: 0,
     lineHeight: 1,
     filter: "drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3))",
   },
-  gameCardContent: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-  },
   gameName: {
-    fontSize: "1.15rem",
+    fontSize: "0.9rem",
     fontWeight: 700,
     margin: 0,
     letterSpacing: "-0.01em",
-  },
-  gameDescription: {
-    fontSize: "0.85rem",
-    lineHeight: 1.4,
-    margin: 0,
-  },
-  gameFooter: {
-    display: "flex",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: "8px",
-    marginTop: "6px",
+    lineHeight: 1.2,
   },
   playerRangePill: {
-    fontSize: "0.75rem",
+    fontSize: "0.7rem",
     fontWeight: 600,
-    padding: "4px 10px",
+    padding: "3px 8px",
     borderRadius: "999px",
     border: "1px solid",
     letterSpacing: "0.02em",
   },
-  needMoreBadge: {
-    fontSize: "0.75rem",
-    fontWeight: 600,
+  needOverlay: {
+    position: "absolute",
+    inset: 0,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
+    borderRadius: "16px",
+    fontSize: "0.8rem",
+    fontWeight: 700,
     color: "#fbbf24",
-    backgroundColor: "rgba(251, 191, 36, 0.1)",
-    padding: "4px 10px",
-    borderRadius: "999px",
-    border: "1px solid rgba(251, 191, 36, 0.25)",
-  },
-  hostChoosesBadge: {
-    fontSize: "0.7rem",
-    fontWeight: 500,
-    color: "#94a3b8",
-    backgroundColor: "rgba(148, 163, 184, 0.1)",
-    padding: "3px 8px",
-    borderRadius: "999px",
-    border: "1px solid rgba(148, 163, 184, 0.2)",
-    fontStyle: "italic",
+    letterSpacing: "0.02em",
+    pointerEvents: "none",
   },
 };
