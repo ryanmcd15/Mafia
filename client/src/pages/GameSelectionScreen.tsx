@@ -66,6 +66,8 @@ const GAME_EMOJIS: Record<string, string> = {
   "truth-or-dare": "🎯",
   "two-truths-one-lie": "🤥",
   spyfall: "🕵️",
+  "battle-shits": "💩",
+  "guess-who": "❓",
 };
 
 function getGameEmoji(gameId: string): string {
