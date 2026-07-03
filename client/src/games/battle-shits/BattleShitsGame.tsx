@@ -98,15 +98,24 @@ export const BattleShitsGame: React.FC<GameUIProps> = ({
   /* ── Socket wiring ─────────────────────────────────────────── */
   useEffect(() => {
     // Reconnect / initial state fetch
-    socket.emit("gameEvent", { type: "getState" }, (state: BattleShitsClientState) => {
+    socket.emit("gameEvent", { type: "getState" }, (response: { success: boolean; state?: BattleShitsClientState }) => {
+      const state = response?.state;
       if (state) {
         setGameState(state);
         setPhase(state.phase);
       }
     });
 
-    function onPhaseChanged(data: { phase: GamePhase }) {
+    function onPhaseChanged(data: { phase: GamePhase; mode?: string; activeShooter?: string }) {
       setPhase(data.phase);
+      // When entering a phase, re-request state to sync
+      socket.emit("gameEvent", { type: "getState" }, (response: { success: boolean; state?: BattleShitsClientState }) => {
+        const state = response?.state;
+        if (state) {
+          setGameState(state);
+          setPhase(state.phase);
+        }
+      });
     }
 
     function onPoopPlaced(data: { type: PoopType; cells: Cell[] }) {
