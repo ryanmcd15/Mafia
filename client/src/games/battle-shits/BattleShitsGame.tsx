@@ -27,6 +27,8 @@ function injectKeyframes() {
     @keyframes bs-sunk   { 0% { transform:scale(1); } 50% { transform:scale(1.15); } 100% { transform:scale(1); } }
     @keyframes bs-bounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
     @keyframes bs-splash { 0% { opacity:1; transform:scale(0.5); } 100% { opacity:0.7; transform:scale(1); } }
+    @keyframes bs-sunk-banner { 0% { opacity:0; transform:scale(0.7) translateY(-20px); } 50% { opacity:1; transform:scale(1.05) translateY(0); } 80% { opacity:1; transform:scale(1); } 100% { opacity:0; transform:scale(0.95) translateY(10px); } }
+    @keyframes bs-cell-flash { 0%,100% { opacity:1; } 25%,75% { opacity:0.4; } 50% { opacity:1; } }
   `;
   document.head.appendChild(s);
 }
@@ -169,7 +171,9 @@ export const BattleShitsGame: React.FC<GameUIProps> = ({
   const [phase, setPhase] = useState<GamePhase>("placement");
   const [gameState, setGameState] = useState<BattleShitsClientState | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [sunkAnnouncement, setSunkAnnouncement] = useState<{ type: PoopType; byMe: boolean } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sunkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { injectKeyframes(); }, []);
 
@@ -249,7 +253,6 @@ export const BattleShitsGame: React.FC<GameUIProps> = ({
       setGameState((prev) => {
         if (!prev) return prev;
         if (prev.mySideId === data.sideId) {
-          // My poop was sunk
           return {
             ...prev,
             myPoops: prev.myPoops.map((p) =>
@@ -259,7 +262,11 @@ export const BattleShitsGame: React.FC<GameUIProps> = ({
         }
         return prev;
       });
-      showToast(`💨 ${POOP_LABELS[data.poopType]} was sunk!`);
+      // Show sunk announcement
+      const byMe = (gameState?.activeShooter === myPlayerId);
+      setSunkAnnouncement({ type: data.poopType, byMe });
+      if (sunkTimer.current) clearTimeout(sunkTimer.current);
+      sunkTimer.current = setTimeout(() => setSunkAnnouncement(null), 2500);
     }
 
     function onBsTurnStarted(data: { activeShooter: string; timeRemaining: number }) {
@@ -326,6 +333,37 @@ export const BattleShitsGame: React.FC<GameUIProps> = ({
       {toast && (
         <div style={S.toast} role="alert" aria-live="assertive">
           {toast}
+        </div>
+      )}
+
+      {/* Sunk announcement overlay */}
+      {sunkAnnouncement && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 8000,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          pointerEvents: "none",
+        }}>
+          <div style={{
+            background: sunkAnnouncement.byMe
+              ? "linear-gradient(135deg, rgba(22,163,74,.95), rgba(15,118,54,.95))"
+              : "linear-gradient(135deg, rgba(220,38,38,.95), rgba(153,27,27,.95))",
+            borderRadius: "20px",
+            padding: "28px 40px",
+            textAlign: "center",
+            boxShadow: "0 24px 60px rgba(0,0,0,.6)",
+            animation: "bs-sunk-banner 2.5s ease-in-out forwards",
+            border: `2px solid ${sunkAnnouncement.byMe ? "#4ade80" : "#f87171"}`,
+          }}>
+            <div style={{ fontSize: "3rem", marginBottom: "8px" }}>
+              {sunkAnnouncement.byMe ? "💨" : "💥"}
+            </div>
+            <p style={{ color: "#fff", fontWeight: 900, fontSize: "1.6rem", margin: 0, letterSpacing: "-0.02em" }}>
+              {sunkAnnouncement.byMe ? "FLUSHED!" : "POOP SUNK!"}
+            </p>
+            <p style={{ color: "rgba(255,255,255,.8)", fontSize: "1rem", margin: "6px 0 0", fontWeight: 600 }}>
+              {POOP_NAMES[sunkAnnouncement.type]}
+            </p>
+          </div>
         </div>
       )}
 
