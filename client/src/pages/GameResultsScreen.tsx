@@ -36,7 +36,7 @@ function renderScores(scores: Record<string, number> | Array<{ name: string; sco
   );
 }
 
-function renderResults(gameResults: unknown): React.JSX.Element {
+function renderResults(gameResults: unknown, platformPlayers?: Array<{ id: string; name: string }>): React.JSX.Element {
   if (!gameResults || typeof gameResults !== "object") {
     return <p style={{ color: "var(--text-secondary, #b0b0b0)", fontSize: "1.1rem" }}>Game Complete!</p>;
   }
@@ -45,6 +45,22 @@ function renderResults(gameResults: unknown): React.JSX.Element {
   const elements: React.JSX.Element[] = [];
 
   if ("winner" in results && results.winner != null) {
+    // Try to resolve winner to a player name
+    let winnerDisplay = String(results.winner);
+    const winnerIds = results.winnerPlayerIds as string[] | undefined;
+    if (winnerIds && platformPlayers) {
+      const names = winnerIds
+        .map((id) => platformPlayers.find((p) => p.id === id)?.name ?? id)
+        .filter((n) => n.length < 30); // filter out raw socket IDs if no name found
+      if (names.length > 0) {
+        winnerDisplay = names.join(", ");
+      }
+    } else if (platformPlayers) {
+      // Maybe winner is a player ID directly
+      const player = platformPlayers.find((p) => p.id === winnerDisplay);
+      if (player) winnerDisplay = player.name;
+    }
+
     elements.push(
       <p
         key="winner"
@@ -55,7 +71,7 @@ function renderResults(gameResults: unknown): React.JSX.Element {
           marginBottom: "16px",
         }}
       >
-        Winner: {String(results.winner)}
+        Winner: {winnerDisplay}
       </p>
     );
   }
@@ -79,7 +95,7 @@ function renderResults(gameResults: unknown): React.JSX.Element {
 }
 
 export function GameResultsScreen(): React.JSX.Element {
-  const { gameResults, myPlayer } = usePlatformStore();
+  const { gameResults, myPlayer, players } = usePlatformStore();
   const isHost = myPlayer?.isHost ?? false;
 
   // Determine winner/loser for Mafia-style games
@@ -191,7 +207,7 @@ export function GameResultsScreen(): React.JSX.Element {
           zIndex: 1,
         }}
       >
-        {renderResults(gameResults)}
+        {renderResults(gameResults, players)}
       </div>
 
       {isHost ? (
