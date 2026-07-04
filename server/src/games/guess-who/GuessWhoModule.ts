@@ -97,6 +97,12 @@ export class GuessWhoModule implements GameModule {
       case "makeGuess":
         this.handleMakeGuess(socketId, payload as { photoId: string });
         break;
+      case "replayWithPhotos":
+        this.handleReplayWithPhotos();
+        break;
+      case "deletePhoto":
+        this.handleDeletePhoto(socketId, payload as { photoId: string });
+        break;
       default:
         break;
     }
@@ -331,6 +337,55 @@ export class GuessWhoModule implements GameModule {
       // Guesser loses
       this.endGame(opponentSide, payload.photoId, false);
     }
+  }
+
+  private handleReplayWithPhotos(): void {
+    if (!this.context) return;
+
+    // Reset game state but keep photos
+    for (const side of this.sides) {
+      side.pickedPhotoId = null;
+    }
+    this.phase = "pick";
+    this.winner = null;
+    this.winnerPlayerIds = [];
+    this.activeSideIndex = 0;
+
+    this.context.emitToRoom("gwPhaseChanged", { phase: "pick" });
+  }
+
+  private handleDeletePhoto(socketId: string, payload: { photoId: string }): void {
+    if (!this.context) return;
+
+    if (this.phase !== "upload") {
+      this.context.emitToPlayer(socketId, "error", {
+        message: "Cannot delete photos: not in upload phase.",
+      });
+      return;
+    }
+
+    if (!payload || !payload.photoId) {
+      this.context.emitToPlayer(socketId, "error", {
+        message: "Invalid delete payload.",
+      });
+      return;
+    }
+
+    const idx = this.photos.findIndex((p) => p.id === payload.photoId);
+    if (idx === -1) {
+      this.context.emitToPlayer(socketId, "error", {
+        message: "Photo not found.",
+      });
+      return;
+    }
+
+    this.photos.splice(idx, 1);
+
+    this.context.emitToRoom("gwPhotoDeleted", {
+      photoId: payload.photoId,
+      count: this.photos.length,
+      total: REQUIRED_PHOTOS,
+    });
   }
 
   // ─── Private Helpers ─────────────────────────────────────────────────

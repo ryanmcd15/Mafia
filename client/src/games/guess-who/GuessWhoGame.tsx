@@ -241,11 +241,20 @@ export const GuessWhoGame: React.FC<GameUIProps> = ({
     socket.on("gwTurnStarted", onTurnStarted);
     socket.on("error", onError);
 
+    function onPhotoDeleted(data: { photoId: string }) {
+      setGameState((prev) => {
+        if (!prev) return prev;
+        return { ...prev, photos: prev.photos.filter((p) => p.id !== data.photoId) };
+      });
+    }
+    socket.on("gwPhotoDeleted", onPhotoDeleted);
+
     return () => {
       socket.off("gwPhaseChanged", onPhaseChanged);
       socket.off("gwPhotoUploaded", onPhotoUploaded);
       socket.off("gwPickConfirmed", onPickConfirmed);
       socket.off("gwTurnStarted", onTurnStarted);
+      socket.off("gwPhotoDeleted", onPhotoDeleted);
       socket.off("error", onError);
     };
   }, [myPlayerId, showToast]);
@@ -400,6 +409,34 @@ const UploadPhase: React.FC<UploadPhaseProps> = ({ gameState, onToast }) => {
             {gameState?.photos.map((photo) => (
               <div key={photo.id} style={{ ...S.photoCell, animation: "gw-pop .3s ease-out" }}>
                 <img src={photo.dataUrl} alt="uploaded" style={S.photoImg} />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    socket.emit("gameEvent", { type: "deletePhoto", payload: { photoId: photo.id } });
+                  }}
+                  style={{
+                    position: "absolute",
+                    top: "2px",
+                    right: "2px",
+                    width: "18px",
+                    height: "18px",
+                    borderRadius: "50%",
+                    background: "rgba(239,68,68,.85)",
+                    border: "none",
+                    color: "#fff",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    lineHeight: 1,
+                    padding: 0,
+                  }}
+                  aria-label="Delete photo"
+                >
+                  ✕
+                </button>
               </div>
             ))}
           </div>
@@ -880,6 +917,17 @@ const GameOverScreen: React.FC<GameOverScreenProps> = ({ gameState, players, myP
           )}
         </div>
       </div>
+
+      {/* Replay button */}
+      <button
+        onClick={() => socket.emit("gameEvent", { type: "replayWithPhotos", payload: {} })}
+        style={{
+          ...S.bigBtn,
+          background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+        }}
+      >
+        🔄 Play Again (Same Photos)
+      </button>
     </div>
   );
 };
