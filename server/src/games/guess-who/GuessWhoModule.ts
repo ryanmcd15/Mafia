@@ -100,6 +100,9 @@ export class GuessWhoModule implements GameModule {
       case "replayWithPhotos":
         this.handleReplayWithPhotos();
         break;
+      case "exitToLobby":
+        this.handleExitToLobby();
+        break;
       case "deletePhoto":
         this.handleDeletePhoto(socketId, payload as { photoId: string });
         break;
@@ -453,6 +456,12 @@ export class GuessWhoModule implements GameModule {
       side1Pick: this.sides[1].pickedPhotoId,
     });
 
+    // Don't call signalGameOver — let the game's own GameOverScreen handle
+    // the replay/reveal UI. Players use "exitToLobby" to exit.
+  }
+
+  private handleExitToLobby(): void {
+    if (!this.context) return;
     this.context.signalGameOver({
       game: "guess-who",
       winner: this.winner,

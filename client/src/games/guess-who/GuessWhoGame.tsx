@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import socket from "../../socket";
+import { returnToGameSelection } from "../../store/platformStore";
 import type { GameUIProps } from "../registry";
 import type { GWClientState, GWPhoto, GWPhase } from "./types";
 
@@ -927,6 +928,20 @@ const GameOverScreen: React.FC<GameOverScreenProps> = ({ gameState, players, myP
         }}
       >
         🔄 Play Again (Same Photos)
+      </button>
+
+      {/* Back to games */}
+      <button
+        onClick={() => socket.emit("gameEvent", { type: "exitToLobby", payload: {} })}
+        style={{
+          ...S.bigBtn,
+          background: "transparent",
+          border: "1px solid rgba(148,163,184,.3)",
+          color: "#94a3b8",
+          fontSize: "0.9rem",
+        }}
+      >
+        🎮 Back to Games List
       </button>
     </div>
   );
