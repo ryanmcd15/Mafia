@@ -42,6 +42,8 @@ const POOP_COLORS: Record<PoopType, { fill: string; stroke: string; dark: string
 };
 
 /* ─── Full-poop SVG ───────────────────────────────────────────── */
+// Renders one classic 💩 swirl shape per occupied cell.
+// Each cell gets its own complete poop that slightly overlaps neighbors.
 function PoopModel({
   poopType,
   cells,
@@ -65,55 +67,56 @@ function PoopModel({
   const isH = orientation === "horizontal";
   const totalW = isH ? n * stride - gap : cellSize;
   const totalH = isH ? cellSize : n * stride - gap;
-  const id = `pm-${poopType}-${n}-${isH ? "h" : "v"}`;
 
-  // Sizing helpers
-  const W = totalW;
-  const H = totalH;
+  // Draw one poop emoji swirl per cell
+  const poops: JSX.Element[] = [];
+  for (let i = 0; i < n; i++) {
+    const cx = isH ? i * stride + cellSize / 2 : cellSize / 2;
+    const cy = isH ? cellSize / 2 : i * stride + cellSize / 2;
+    const r = cellSize * 0.42; // radius of the poop
 
-  // Build a bumpy organic poop silhouette using SVG paths
-  // The poop is a low-lying elongated shape with lumps on top
-  // We model it as a base ellipse + overlapping bump circles
-
-  // Base: flat-bottomed ellipse spanning the full length
-  const baseRx = isH ? W * 0.48 : W * 0.38;
-  const baseRy = isH ? H * 0.32 : H * 0.48;
-  const baseCx = W / 2;
-  const baseCy = isH ? H * 0.72 : H / 2;
-
-  // Generate bumps along the top surface
-  // Number of bumps scales with poop size
-  const numBumps = Math.max(n, 2);
-  const bumps: Array<{ cx: number; cy: number; rx: number; ry: number; rotate?: number }> = [];
-
-  for (let i = 0; i < numBumps; i++) {
-    const t = numBumps === 1 ? 0.5 : i / (numBumps - 1);
-    if (isH) {
-      const bx = W * 0.1 + t * W * 0.8;
-      const by = H * 0.45;
-      const rx = (W / numBumps) * 0.52;
-      const ry = H * 0.38;
-      bumps.push({ cx: bx, cy: by, rx, ry });
-    } else {
-      const bx = W * 0.5;
-      const by = H * 0.1 + t * H * 0.8;
-      const rx = W * 0.38;
-      const ry = (H / numBumps) * 0.52;
-      bumps.push({ cx: bx, cy: by, rx, ry });
-    }
+    poops.push(
+      <g key={i} transform={`translate(${cx}, ${cy})`}>
+        {/* Base layer - wide rounded bottom */}
+        <ellipse cx={0} cy={r * 0.3} rx={r * 0.85} ry={r * 0.45}
+          fill={isSunk ? "#5c2020" : "#6b3a20"}
+        />
+        {/* Middle swirl */}
+        <ellipse cx={0} cy={r * -0.05} rx={r * 0.65} ry={r * 0.4}
+          fill={isSunk ? "#7a2828" : "#8B4513"}
+        />
+        {/* Top swirl - pointed */}
+        <ellipse cx={r * 0.05} cy={r * -0.35} rx={r * 0.4} ry={r * 0.3}
+          fill={isSunk ? "#8b3030" : "#A0522D"}
+        />
+        {/* Tip */}
+        <circle cx={r * 0.1} cy={r * -0.55} r={r * 0.15}
+          fill={isSunk ? "#8b3030" : "#A0522D"}
+        />
+        {/* Shine highlight - glossy */}
+        <ellipse cx={r * -0.2} cy={r * -0.25} rx={r * 0.18} ry={r * 0.12}
+          fill="rgba(255,255,255,0.35)"
+        />
+        {/* Small secondary shine */}
+        <circle cx={r * 0.15} cy={r * -0.45} r={r * 0.08}
+          fill="rgba(255,255,255,0.25)"
+        />
+        {/* Hit marker */}
+        {isHit && !isSunk && (
+          <text x={0} y={4} textAnchor="middle" fontSize={r * 1.2} fill="#fef08a">✕</text>
+        )}
+        {/* Sunk marker */}
+        {isSunk && (
+          <text x={0} y={4} textAnchor="middle" fontSize={r * 1.1} fill="rgba(255,200,200,0.9)">💨</text>
+        )}
+      </g>
+    );
   }
-
-  const fillId = `${id}-fill`;
-  const shadowId = `${id}-shadow`;
-  const shineId = `${id}-shine`;
-
-  // Sunk/hit overlay colors
-  const overlayOpacity = isSunk ? 0.55 : isHit ? 0.3 : 0;
 
   return (
     <svg
-      width={W}
-      height={H}
+      width={totalW}
+      height={totalH}
       style={{
         position: "absolute",
         top: 0,
@@ -121,113 +124,11 @@ function PoopModel({
         pointerEvents: "none",
         zIndex: 2,
         overflow: "visible",
-        filter: isSunk ? "saturate(0.3) brightness(0.5)" : undefined,
+        filter: isSunk ? "saturate(0.4) brightness(0.6)" : undefined,
       }}
       aria-hidden="true"
     >
-      <defs>
-        {/* Main brown gradient - mimics the 3D render */}
-        <radialGradient id={fillId} cx="38%" cy="30%" r="72%" fx="32%" fy="25%">
-          <stop offset="0%"   stopColor="#c4822a" />
-          <stop offset="25%"  stopColor="#a0541a" />
-          <stop offset="55%"  stopColor="#7a3210" />
-          <stop offset="80%"  stopColor="#5a1e08" />
-          <stop offset="100%" stopColor="#3d1205" />
-        </radialGradient>
-        {/* Bottom shadow gradient */}
-        <radialGradient id={shadowId} cx="50%" cy="90%" r="50%">
-          <stop offset="0%" stopColor="rgba(0,0,0,0.35)" />
-          <stop offset="100%" stopColor="rgba(0,0,0,0)" />
-        </radialGradient>
-        {/* Top shine */}
-        <radialGradient id={shineId} cx="35%" cy="25%" r="45%">
-          <stop offset="0%" stopColor="rgba(255,220,150,0.55)" />
-          <stop offset="60%" stopColor="rgba(255,180,80,0.15)" />
-          <stop offset="100%" stopColor="rgba(255,120,30,0)" />
-        </radialGradient>
-        <clipPath id={`${id}-clip`}>
-          <rect x="-4" y="-4" width={W + 8} height={H + 8} />
-        </clipPath>
-      </defs>
-
-      {/* Drop shadow */}
-      <ellipse
-        cx={baseCx} cy={isH ? H * 0.92 : H / 2}
-        rx={isH ? W * 0.44 : W * 0.35}
-        ry={isH ? H * 0.12 : H * 0.44}
-        fill={`url(#${shadowId})`}
-        opacity={0.6}
-      />
-
-      {/* Base body */}
-      <ellipse
-        cx={baseCx} cy={baseCy}
-        rx={baseRx} ry={baseRy}
-        fill={`url(#${fillId})`}
-      />
-
-      {/* Bumps on top — creates the lumpy segmented look */}
-      {bumps.map((b, i) => (
-        <ellipse
-          key={i}
-          cx={b.cx} cy={b.cy}
-          rx={b.rx} ry={b.ry}
-          fill={`url(#${fillId})`}
-        />
-      ))}
-
-      {/* Texture overlay — subtle darker veins */}
-      {bumps.map((b, i) => (
-        <ellipse
-          key={`t${i}`}
-          cx={b.cx + (isH ? 0 : b.rx * 0.1)} cy={b.cy + (isH ? b.ry * 0.2 : 0)}
-          rx={b.rx * 0.6} ry={b.ry * 0.55}
-          fill="none"
-          stroke="rgba(60,15,5,0.25)"
-          strokeWidth={isH ? H * 0.08 : W * 0.08}
-        />
-      ))}
-
-      {/* Specular highlight */}
-      <ellipse
-        cx={isH ? W * 0.28 : W * 0.35}
-        cy={isH ? H * 0.28 : H * 0.22}
-        rx={isH ? W * 0.14 : W * 0.18}
-        ry={isH ? H * 0.12 : H * 0.1}
-        fill={`url(#${shineId})`}
-        opacity={0.85}
-      />
-      {/* Secondary smaller highlight */}
-      <ellipse
-        cx={isH ? W * 0.55 : W * 0.6}
-        cy={isH ? H * 0.22 : H * 0.42}
-        rx={isH ? W * 0.06 : W * 0.09}
-        ry={isH ? H * 0.07 : H * 0.06}
-        fill="rgba(255,230,160,0.35)"
-      />
-
-      {/* Hit/sunk overlay */}
-      {(isHit || isSunk) && (
-        <rect
-          x={0} y={0} width={W} height={H}
-          fill={isSunk ? "rgba(150,20,20,0.5)" : "rgba(220,50,50,0.3)"}
-          rx={4}
-          clipPath={`url(#${id}-clip)`}
-        />
-      )}
-
-      {/* Sunk marker */}
-      {isSunk && (
-        <text
-          x={W / 2} y={H / 2 + 6}
-          textAnchor="middle"
-          fontSize={Math.min(W, H) * 0.55}
-          fill="rgba(255,200,200,0.9)"
-          style={{ pointerEvents: "none" }}
-        >
-          💨
-        </text>
-      )}
+      {poops}
     </svg>
   );
 }
