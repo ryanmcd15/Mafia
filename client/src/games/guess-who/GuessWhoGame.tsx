@@ -417,22 +417,24 @@ const UploadPhase: React.FC<UploadPhaseProps> = ({ gameState, onToast }) => {
                   }}
                   style={{
                     position: "absolute",
-                    top: "2px",
-                    right: "2px",
-                    width: "18px",
-                    height: "18px",
+                    top: "-4px",
+                    right: "-4px",
+                    width: "24px",
+                    height: "24px",
                     borderRadius: "50%",
-                    background: "rgba(239,68,68,.85)",
-                    border: "none",
+                    background: "#ef4444",
+                    border: "2px solid #fff",
                     color: "#fff",
-                    fontSize: "11px",
-                    fontWeight: 700,
+                    fontSize: "14px",
+                    fontWeight: 900,
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     lineHeight: 1,
                     padding: 0,
+                    zIndex: 5,
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.4)",
                   }}
                   aria-label="Delete photo"
                 >
