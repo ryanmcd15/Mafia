@@ -42,8 +42,8 @@ const POOP_COLORS: Record<PoopType, { fill: string; stroke: string; dark: string
 };
 
 /* ─── Full-poop SVG ───────────────────────────────────────────── */
-// Renders one classic 💩 swirl shape per occupied cell.
-// Each cell gets its own complete poop that slightly overlaps neighbors.
+// Renders one classic 💩 emoji-style poop per occupied cell.
+// Three stacked swirl layers + cute face. Slightly overlapping between cells.
 function PoopModel({
   poopType,
   cells,
@@ -68,46 +68,115 @@ function PoopModel({
   const totalW = isH ? n * stride - gap : cellSize;
   const totalH = isH ? cellSize : n * stride - gap;
 
-  // Draw one poop emoji swirl per cell
+  // Colors
+  const baseColor = isSunk ? "#4a1a1a" : "#5C3317";
+  const midColor = isSunk ? "#6b2222" : "#7B4B2A";
+  const topColor = isSunk ? "#8b3333" : "#9B6B3D";
+  const highlightColor = isSunk ? "rgba(255,180,180,0.2)" : "rgba(255,255,255,0.4)";
+
+  // Draw one complete 💩 emoji-style poop per cell
   const poops: JSX.Element[] = [];
   for (let i = 0; i < n; i++) {
     const cx = isH ? i * stride + cellSize / 2 : cellSize / 2;
     const cy = isH ? cellSize / 2 : i * stride + cellSize / 2;
-    const r = cellSize * 0.42; // radius of the poop
+    const s = cellSize * 0.44; // scale factor
 
     poops.push(
       <g key={i} transform={`translate(${cx}, ${cy})`}>
-        {/* Base layer - wide rounded bottom */}
-        <ellipse cx={0} cy={r * 0.3} rx={r * 0.85} ry={r * 0.45}
-          fill={isSunk ? "#5c2020" : "#6b3a20"}
+        {/* Drop shadow */}
+        <ellipse cx={0} cy={s * 0.7} rx={s * 0.7} ry={s * 0.18}
+          fill="rgba(0,0,0,0.3)"
         />
-        {/* Middle swirl */}
-        <ellipse cx={0} cy={r * -0.05} rx={r * 0.65} ry={r * 0.4}
-          fill={isSunk ? "#7a2828" : "#8B4513"}
+        {/* === Bottom swirl layer (widest) === */}
+        <path
+          d={`M ${-s * 0.75} ${s * 0.35}
+              C ${-s * 0.75} ${s * 0.75}, ${s * 0.75} ${s * 0.75}, ${s * 0.75} ${s * 0.35}
+              C ${s * 0.75} ${s * 0.05}, ${s * 0.6} ${-s * 0.05}, ${s * 0.5} ${s * 0.05}
+              C ${-s * 0.5} ${s * 0.05}, ${-s * 0.75} ${s * 0.05}, ${-s * 0.75} ${s * 0.35} Z`}
+          fill={baseColor}
+          stroke={isSunk ? "#3a1010" : "#3D1F0A"}
+          strokeWidth={0.5}
         />
-        {/* Top swirl - pointed */}
-        <ellipse cx={r * 0.05} cy={r * -0.35} rx={r * 0.4} ry={r * 0.3}
-          fill={isSunk ? "#8b3030" : "#A0522D"}
+        {/* === Middle swirl layer === */}
+        <path
+          d={`M ${-s * 0.55} ${s * 0.0}
+              C ${-s * 0.55} ${s * 0.3}, ${s * 0.55} ${s * 0.3}, ${s * 0.55} ${s * 0.0}
+              C ${s * 0.55} ${-s * 0.2}, ${s * 0.4} ${-s * 0.3}, ${s * 0.3} ${-s * 0.2}
+              C ${-s * 0.3} ${-s * 0.2}, ${-s * 0.55} ${-s * 0.2}, ${-s * 0.55} ${s * 0.0} Z`}
+          fill={midColor}
+          stroke={isSunk ? "#4a1515" : "#4A2A10"}
+          strokeWidth={0.4}
         />
-        {/* Tip */}
-        <circle cx={r * 0.1} cy={r * -0.55} r={r * 0.15}
-          fill={isSunk ? "#8b3030" : "#A0522D"}
+        {/* === Top swirl (tapers to a point) === */}
+        <path
+          d={`M ${-s * 0.35} ${-s * 0.25}
+              C ${-s * 0.35} ${-s * 0.05}, ${s * 0.35} ${-s * 0.05}, ${s * 0.35} ${-s * 0.25}
+              C ${s * 0.35} ${-s * 0.45}, ${s * 0.2} ${-s * 0.55}, ${s * 0.1} ${-s * 0.5}
+              C ${-s * 0.1} ${-s * 0.5}, ${-s * 0.35} ${-s * 0.45}, ${-s * 0.35} ${-s * 0.25} Z`}
+          fill={topColor}
+          stroke={isSunk ? "#5a2020" : "#5C3A1A"}
+          strokeWidth={0.3}
         />
-        {/* Shine highlight - glossy */}
-        <ellipse cx={r * -0.2} cy={r * -0.25} rx={r * 0.18} ry={r * 0.12}
-          fill="rgba(255,255,255,0.35)"
+        {/* === Pointed tip === */}
+        <ellipse cx={s * 0.05} cy={-s * 0.6} rx={s * 0.12} ry={s * 0.14}
+          fill={topColor}
+          stroke={isSunk ? "#5a2020" : "#5C3A1A"}
+          strokeWidth={0.3}
         />
-        {/* Small secondary shine */}
-        <circle cx={r * 0.15} cy={r * -0.45} r={r * 0.08}
-          fill="rgba(255,255,255,0.25)"
+        {/* Curl tip point */}
+        <circle cx={s * 0.08} cy={-s * 0.72} r={s * 0.06}
+          fill={topColor}
         />
-        {/* Hit marker */}
-        {isHit && !isSunk && (
-          <text x={0} y={4} textAnchor="middle" fontSize={r * 1.2} fill="#fef08a">✕</text>
+        {/* === Glossy highlights === */}
+        <ellipse cx={-s * 0.25} cy={-s * 0.1} rx={s * 0.15} ry={s * 0.08}
+          fill={highlightColor}
+        />
+        <ellipse cx={-s * 0.15} cy={-s * 0.4} rx={s * 0.1} ry={s * 0.06}
+          fill={highlightColor}
+        />
+        {/* === Cute face (eyes + smile) - only when not sunk === */}
+        {!isSunk && !isHit && (
+          <>
+            {/* Left eye */}
+            <circle cx={-s * 0.18} cy={s * 0.12} r={s * 0.08} fill="#1a1a1a" />
+            <circle cx={-s * 0.16} cy={s * 0.1} r={s * 0.03} fill="#fff" />
+            {/* Right eye */}
+            <circle cx={s * 0.18} cy={s * 0.12} r={s * 0.08} fill="#1a1a1a" />
+            <circle cx={s * 0.2} cy={s * 0.1} r={s * 0.03} fill="#fff" />
+            {/* Smile */}
+            <path
+              d={`M ${-s * 0.12} ${s * 0.28} Q ${0} ${s * 0.4} ${s * 0.12} ${s * 0.28}`}
+              fill="none"
+              stroke="#1a1a1a"
+              strokeWidth={s * 0.06}
+              strokeLinecap="round"
+            />
+          </>
         )}
-        {/* Sunk marker */}
+        {/* === Hit marker (X eyes) === */}
+        {isHit && !isSunk && (
+          <>
+            {/* X left eye */}
+            <line x1={-s * 0.25} y1={s * 0.05} x2={-s * 0.1} y2={s * 0.2} stroke="#fef08a" strokeWidth={s * 0.06} strokeLinecap="round" />
+            <line x1={-s * 0.1} y1={s * 0.05} x2={-s * 0.25} y2={s * 0.2} stroke="#fef08a" strokeWidth={s * 0.06} strokeLinecap="round" />
+            {/* X right eye */}
+            <line x1={s * 0.1} y1={s * 0.05} x2={s * 0.25} y2={s * 0.2} stroke="#fef08a" strokeWidth={s * 0.06} strokeLinecap="round" />
+            <line x1={s * 0.25} y1={s * 0.05} x2={s * 0.1} y2={s * 0.2} stroke="#fef08a" strokeWidth={s * 0.06} strokeLinecap="round" />
+            {/* Dizzy mouth */}
+            <circle cx={0} cy={s * 0.35} r={s * 0.08} fill="none" stroke="#fef08a" strokeWidth={s * 0.05} />
+          </>
+        )}
+        {/* === Sunk state (ghost/faded) === */}
         {isSunk && (
-          <text x={0} y={4} textAnchor="middle" fontSize={r * 1.1} fill="rgba(255,200,200,0.9)">💨</text>
+          <>
+            {/* Dead eyes */}
+            <line x1={-s * 0.25} y1={s * 0.05} x2={-s * 0.1} y2={s * 0.2} stroke="rgba(255,200,200,0.7)" strokeWidth={s * 0.05} strokeLinecap="round" />
+            <line x1={-s * 0.1} y1={s * 0.05} x2={-s * 0.25} y2={s * 0.2} stroke="rgba(255,200,200,0.7)" strokeWidth={s * 0.05} strokeLinecap="round" />
+            <line x1={s * 0.1} y1={s * 0.05} x2={s * 0.25} y2={s * 0.2} stroke="rgba(255,200,200,0.7)" strokeWidth={s * 0.05} strokeLinecap="round" />
+            <line x1={s * 0.25} y1={s * 0.05} x2={s * 0.1} y2={s * 0.2} stroke="rgba(255,200,200,0.7)" strokeWidth={s * 0.05} strokeLinecap="round" />
+            {/* Ghost puff */}
+            <text x={0} y={s * 0.45} textAnchor="middle" fontSize={s * 0.6} fill="rgba(255,200,200,0.6)">💨</text>
+          </>
         )}
       </g>
     );
@@ -124,7 +193,7 @@ function PoopModel({
         pointerEvents: "none",
         zIndex: 2,
         overflow: "visible",
-        filter: isSunk ? "saturate(0.4) brightness(0.6)" : undefined,
+        filter: isSunk ? "saturate(0.3) brightness(0.5)" : "drop-shadow(0 2px 3px rgba(0,0,0,0.4))",
       }}
       aria-hidden="true"
     >
