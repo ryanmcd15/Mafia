@@ -89,6 +89,14 @@ export class SecretAdmirerModule implements GameModule {
     this.context = context;
     this.state = this.createInitialState();
 
+    // Validate and load the prompt pool (Req 13.3, 13.4)
+    const validation = this.promptPool.validate();
+    if (!validation.valid) {
+      context.emitToRoom("saError", {
+        message: `Prompt pool validation failed: ${validation.error}`,
+      });
+    }
+
     const players = context.getPlayers();
     this.hostId = players.length > 0 ? players[0].id : null;
 
