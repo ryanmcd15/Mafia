@@ -134,6 +134,9 @@ export class SecretAdmirerModule implements GameModule {
       case "submitGuess":
         this.handleSubmitGuess(socketId, payload);
         break;
+      case "returnToLobby":
+        this.handleReturnToLobby(socketId);
+        break;
       default:
         break;
     }
@@ -770,11 +773,20 @@ export class SecretAdmirerModule implements GameModule {
     const roundMessages = this.state.roundMessages.get(this.state.currentRound) ?? [];
     const nonBlankMessages = roundMessages.filter((m) => m.text !== "");
 
-    // Emit voting started with anonymous messages (id and text only)
-    this.context.emitToRoom("saVotingStarted", {
-      messages: nonBlankMessages.map((m) => ({ id: m.id, text: m.text })),
-      timeRemaining: 30,
-    });
+    // Get connected player count for voting progress
+    const connectedPlayers = this.context.getPlayers().filter((p) => p.isConnected);
+
+    // Emit voting started per-player so each gets their own myMessageId
+    const messagesList = nonBlankMessages.map((m) => ({ id: m.id, text: m.text }));
+    for (const player of connectedPlayers) {
+      const myMessage = nonBlankMessages.find((m) => m.authorId === player.id);
+      this.context.emitToPlayer(player.id, "saVotingStarted", {
+        messages: messagesList,
+        timeRemaining: 30,
+        totalEligible: connectedPlayers.length,
+        myMessageId: myMessage?.id ?? null,
+      });
+    }
 
     // Emit phase changed
     this.context.emitToRoom("saPhaseChanged", {
@@ -1157,8 +1169,8 @@ export class SecretAdmirerModule implements GameModule {
 
   /**
    * Build and emit the full reveal data: cycle, guesses, messages, statistics,
-   * leaderboard, and awards. Signal game over to the platform.
-   * Req 9.2–9.6, 10.6, 11.1–11.3, 12.1
+   * leaderboard, and awards.
+   * Req 9.2–9.6, 10.6, 11.1–11.3
    */
   private emitRevealData(): void {
     if (!this.context) return;
@@ -1174,7 +1186,33 @@ export class SecretAdmirerModule implements GameModule {
 
     this.context.emitToRoom("saRevealData", revealData);
 
-    // --- Signal game over to platform (Req 12.1) ---
+    // Don't call signalGameOver immediately — let the reveal phase display.
+    // Players use "returnToLobby" to exit.
+  }
+
+  /**
+   * Handle returnToLobby: host triggers game over signal to platform.
+   * Req 12.1
+   */
+  private handleReturnToLobby(socketId: string): void {
+    if (!this.context) return;
+
+    // Only the host can trigger return to lobby
+    if (socketId !== this.hostId) {
+      this.context.emitToPlayer(socketId, "saError", {
+        message: "Only the host can end the game",
+      });
+      return;
+    }
+
+    // Build reveal data for the final scoreboard
+    const players = this.context.getPlayers();
+    const playerNames = new Map<string, string>();
+    for (const p of players) {
+      playerNames.set(p.id, p.name);
+    }
+    const revealData = this.buildRevealData(playerNames, players);
+
     this.context.signalGameOver({ leaderboard: revealData.leaderboard, awards: revealData.awards });
   }
 

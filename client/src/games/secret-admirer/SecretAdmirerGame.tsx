@@ -126,7 +126,17 @@ const ConfigPhase: React.FC<ConfigPhaseProps> = ({
 
   return (
     <div style={containerStyle}>
-      <h2 style={headingStyle}>💌 Secret Admirer</h2>
+      <h2
+        style={{
+          ...headingStyle,
+          fontSize: "24px",
+          background: "linear-gradient(135deg, #ff6b9d, #c44dff, #6c63ff)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+        }}
+      >
+        💌 Secret Admirer
+      </h2>
       <p
         style={{
           textAlign: "center",
@@ -136,8 +146,8 @@ const ConfigPhase: React.FC<ConfigPhaseProps> = ({
         }}
       >
         {isHost
-          ? "Configure the game settings below"
-          : "Waiting for the host to configure the game..."}
+          ? "Set up the game for your group"
+          : "Waiting for the host to configure..."}
       </p>
 
       {/* Rounds Slider */}
@@ -281,12 +291,15 @@ const ConfigPhase: React.FC<ConfigPhaseProps> = ({
           onClick={onStartGame}
           style={{
             ...buttonBase,
-            background: "var(--accent)",
+            background: "linear-gradient(135deg, #6c63ff, #c44dff)",
             color: "#ffffff",
             marginTop: "16px",
+            borderRadius: "12px",
+            minHeight: "48px",
+            boxShadow: "0 4px 12px rgba(108, 99, 255, 0.3)",
           }}
         >
-          Start Game
+          💌 Start Game
         </button>
       )}
     </div>
@@ -681,12 +694,12 @@ export const SecretAdmirerGame: React.FC<GameUIProps> = ({
       setPhase("guessing");
     }
 
-    function handleVotingStarted(data: SaVotingStartedPayload & { myMessageId?: string }) {
+    function handleVotingStarted(data: SaVotingStartedPayload & { myMessageId?: string; totalEligible?: number }) {
       setVotingMessages(data.messages);
       setTimeRemaining(data.timeRemaining);
       setHasVoted(false);
       setVotesIn(0);
-      setTotalEligible(0);
+      setTotalEligible(data.totalEligible ?? 0);
       setMyMessageId(data.myMessageId ?? null);
       setPhase("voting");
     }
@@ -848,7 +861,7 @@ export const SecretAdmirerGame: React.FC<GameUIProps> = ({
   // Reveal phase
   if (phase === "reveal") {
     if (revealData) {
-      return <RevealPhase revealData={revealData} />;
+      return <RevealPhase revealData={revealData} isHost={isHost} />;
     }
     return (
       <div style={{ ...containerStyle, textAlign: "center" }}>

@@ -1150,12 +1150,13 @@ describe("Property 18: Non-blank messages presented for voting", () => {
           // Advance past the 60s reaction timer to transition to voting
           vi.advanceTimersByTime(60_000 + 100);
 
-          // Find the saVotingStarted event
+          // Find the saVotingStarted event (now emitted per-player)
           const votingStartedEvents = emittedEvents.filter(
             (e) => e.event === "saVotingStarted"
           );
-          expect(votingStartedEvents).toHaveLength(1);
+          expect(votingStartedEvents.length).toBeGreaterThanOrEqual(1);
 
+          // Check the first player's payload (all players get the same messages list)
           const payload = votingStartedEvents[0].payload as {
             messages: Array<{ id: string; text: string }>;
             timeRemaining: number;
