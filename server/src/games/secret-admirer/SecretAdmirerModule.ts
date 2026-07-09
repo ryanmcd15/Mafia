@@ -747,7 +747,7 @@ export class SecretAdmirerModule implements GameModule {
     // Start 60s reaction timer (Req 6.6)
     this.state.reactionTimer = setTimeout(() => {
       this.endReactionPhase();
-    }, 60_000);
+    }, 15_000);
   }
 
   /**

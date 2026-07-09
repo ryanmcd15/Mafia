@@ -88,7 +88,7 @@ const emptyStateStyle: React.CSSProperties = {
 
 // ---------- Constants ----------
 
-const REACTION_WINDOW_SECONDS = 60;
+const REACTION_WINDOW_SECONDS = 15;
 
 // ---------- Component ----------
 
