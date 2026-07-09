@@ -42,6 +42,26 @@ function formatTime(seconds: number): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+// ---------- CSS Keyframes Injection ----------
+
+const SA_KF_ID = "sa-keyframes";
+function injectKeyframes() {
+  if (document.getElementById(SA_KF_ID)) return;
+  const s = document.createElement("style");
+  s.id = SA_KF_ID;
+  s.textContent = `
+    @keyframes sa-fadeIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes sa-pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.05); } }
+    @keyframes sa-float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
+    @keyframes sa-glow { 0%,100% { box-shadow:0 0 12px rgba(255,107,157,0.3); } 50% { box-shadow:0 0 24px rgba(255,107,157,0.6); } }
+    @keyframes sa-shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+    @keyframes sa-heartbeat { 0%,100% { transform:scale(1); } 14% { transform:scale(1.3); } 28% { transform:scale(1); } 42% { transform:scale(1.3); } 70% { transform:scale(1); } }
+    @keyframes sa-slideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes sa-confetti { 0% { transform:translateY(0) rotate(0deg); opacity:1; } 100% { transform:translateY(-40px) rotate(360deg); opacity:0; } }
+  `;
+  document.head.appendChild(s);
+}
+
 // ---------- Styles ----------
 
 const containerStyle: React.CSSProperties = {
@@ -49,6 +69,7 @@ const containerStyle: React.CSSProperties = {
   maxWidth: "480px",
   margin: "0 auto",
   color: "var(--text-primary)",
+  animation: "sa-fadeIn 0.4s ease-out",
 };
 
 const headingStyle: React.CSSProperties = {
@@ -60,14 +81,15 @@ const headingStyle: React.CSSProperties = {
 
 const buttonBase: React.CSSProperties = {
   width: "100%",
-  minHeight: "44px",
-  padding: "12px 16px",
+  minHeight: "48px",
+  padding: "14px 16px",
   fontSize: "16px",
   fontWeight: "bold",
   border: "none",
-  borderRadius: "8px",
+  borderRadius: "12px",
   cursor: "pointer",
   marginBottom: "8px",
+  transition: "all 0.2s ease",
 };
 
 const labelStyle: React.CSSProperties = {
@@ -84,22 +106,26 @@ const sliderContainerStyle: React.CSSProperties = {
 
 const sliderStyle: React.CSSProperties = {
   width: "100%",
-  accentColor: "var(--accent)",
+  accentColor: "#ff6b9d",
 };
 
 const cardStyle: React.CSSProperties = {
   background: "var(--bg-secondary)",
-  borderRadius: "12px",
+  borderRadius: "16px",
   padding: "16px",
   marginBottom: "16px",
+  border: "1px solid rgba(255, 107, 157, 0.1)",
 };
 
 const timerStyle: React.CSSProperties = {
-  fontSize: "32px",
+  fontSize: "36px",
   fontWeight: "bold",
   fontVariantNumeric: "tabular-nums",
   textAlign: "center",
   marginBottom: "16px",
+  background: "linear-gradient(135deg, #ff6b9d, #c44dff)",
+  WebkitBackgroundClip: "text",
+  WebkitTextFillColor: "transparent",
 };
 
 // ---------- ConfigPhase ----------
@@ -124,31 +150,31 @@ const ConfigPhase: React.FC<ConfigPhaseProps> = ({
     hot: "🔥 Hot",
   };
 
+  useEffect(() => { injectKeyframes(); }, []);
+
   return (
     <div style={containerStyle}>
-      <h2
-        style={{
-          ...headingStyle,
-          fontSize: "24px",
-          background: "linear-gradient(135deg, #ff6b9d, #c44dff, #6c63ff)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-        }}
-      >
-        💌 Secret Admirer
-      </h2>
-      <p
-        style={{
-          textAlign: "center",
-          color: "var(--text-secondary)",
-          marginBottom: "24px",
-          fontSize: "14px",
-        }}
-      >
-        {isHost
-          ? "Set up the game for your group"
-          : "Waiting for the host to configure..."}
-      </p>
+      {/* Hero */}
+      <div style={{ textAlign: "center", marginBottom: "28px", animation: "sa-slideUp 0.5s ease-out" }}>
+        <div style={{ fontSize: "48px", marginBottom: "8px", animation: "sa-heartbeat 2s ease-in-out infinite" }}>💌</div>
+        <h2
+          style={{
+            fontSize: "26px",
+            fontWeight: "bold",
+            background: "linear-gradient(135deg, #ff6b9d, #c44dff, #6c63ff)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            marginBottom: "8px",
+          }}
+        >
+          Secret Admirer
+        </h2>
+        <p style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
+          {isHost
+            ? "Set up the game for your group ✨"
+            : "Waiting for the host to configure..."}
+        </p>
+      </div>
 
       {/* Rounds Slider */}
       <div style={sliderContainerStyle}>
@@ -183,38 +209,49 @@ const ConfigPhase: React.FC<ConfigPhaseProps> = ({
       <div style={{ marginBottom: "20px" }}>
         <label style={labelStyle}>Spice Level</label>
         <div style={{ display: "flex", gap: "8px" }}>
-          {spiceLevels.map((level) => (
-            <button
-              key={level}
-              onClick={() => onConfigChange({ spiceLevel: level })}
-              disabled={!isHost}
-              style={{
-                flex: 1,
-                padding: "10px 8px",
-                fontSize: "14px",
-                fontWeight: "600",
-                border:
-                  config.spiceLevel === level
-                    ? "2px solid var(--accent)"
-                    : "2px solid var(--bg-tertiary)",
-                borderRadius: "8px",
-                background:
-                  config.spiceLevel === level
-                    ? "rgba(108, 99, 255, 0.15)"
-                    : "var(--bg-secondary)",
-                color:
-                  config.spiceLevel === level
-                    ? "var(--accent)"
-                    : "var(--text-primary)",
-                cursor: isHost ? "pointer" : "default",
-                opacity: !isHost ? 0.7 : 1,
-              }}
-              aria-pressed={config.spiceLevel === level}
-              aria-label={`Spice level: ${level}`}
-            >
-              {spiceLabels[level]}
-            </button>
-          ))}
+          {spiceLevels.map((level) => {
+            const isActive = config.spiceLevel === level;
+            const bgMap: Record<SpiceLevel, string> = {
+              mild: isActive ? "rgba(46, 213, 115, 0.15)" : "var(--bg-secondary)",
+              medium: isActive ? "rgba(255, 165, 2, 0.15)" : "var(--bg-secondary)",
+              hot: isActive ? "rgba(255, 71, 87, 0.15)" : "var(--bg-secondary)",
+            };
+            const borderMap: Record<SpiceLevel, string> = {
+              mild: isActive ? "#2ed573" : "var(--bg-tertiary)",
+              medium: isActive ? "#ffa502" : "var(--bg-tertiary)",
+              hot: isActive ? "#ff4757" : "var(--bg-tertiary)",
+            };
+            const colorMap: Record<SpiceLevel, string> = {
+              mild: isActive ? "#2ed573" : "var(--text-primary)",
+              medium: isActive ? "#ffa502" : "var(--text-primary)",
+              hot: isActive ? "#ff4757" : "var(--text-primary)",
+            };
+            return (
+              <button
+                key={level}
+                onClick={() => onConfigChange({ spiceLevel: level })}
+                disabled={!isHost}
+                style={{
+                  flex: 1,
+                  padding: "12px 8px",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  border: `2px solid ${borderMap[level]}`,
+                  borderRadius: "12px",
+                  background: bgMap[level],
+                  color: colorMap[level],
+                  cursor: isHost ? "pointer" : "default",
+                  opacity: !isHost ? 0.7 : 1,
+                  transition: "all 0.2s ease",
+                  transform: isActive ? "scale(1.02)" : "scale(1)",
+                }}
+                aria-pressed={isActive}
+                aria-label={`Spice level: ${level}`}
+              >
+                {spiceLabels[level]}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -341,6 +378,8 @@ const RoundPhase: React.FC<RoundPhaseProps> = ({
 
   const timerColor = timeRemaining <= 10 ? "var(--danger)" : "var(--text-primary)";
 
+  useEffect(() => { injectKeyframes(); }, []);
+
   // Reset local state when a new round starts
   useEffect(() => {
     setAnswerText("");
@@ -365,67 +404,79 @@ const RoundPhase: React.FC<RoundPhaseProps> = ({
 
   return (
     <div style={containerStyle}>
-      {/* Round Counter */}
+      {/* Round Counter with progress dots */}
       <div
         style={{
           textAlign: "center",
-          fontSize: "14px",
+          fontSize: "13px",
           color: "var(--text-secondary)",
-          marginBottom: "8px",
+          marginBottom: "6px",
+          letterSpacing: "0.5px",
         }}
       >
         Round {currentRound} of {totalRounds}
       </div>
 
-      {/* Timer */}
-      <div style={{ ...timerStyle, color: timerColor }} aria-live="polite">
+      {/* Timer - big and dramatic */}
+      <div style={{ ...timerStyle, color: timeRemaining <= 10 ? "#ff4757" : undefined }} aria-live="polite">
         {formatTime(timeRemaining)}
       </div>
 
-      {/* Target Info */}
+      {/* Target Info - the star of the show */}
       {targetName && (
         <div
           style={{
-            background: "rgba(108, 99, 255, 0.15)",
-            border: "2px solid var(--accent)",
-            borderRadius: "12px",
-            padding: "12px 16px",
+            background: "linear-gradient(135deg, rgba(255, 107, 157, 0.12), rgba(196, 77, 255, 0.08))",
+            border: "2px solid rgba(255, 107, 157, 0.4)",
+            borderRadius: "16px",
+            padding: "16px",
             marginBottom: "16px",
             textAlign: "center",
+            animation: "sa-glow 3s ease-in-out infinite",
           }}
         >
           <p
             style={{
-              fontSize: "12px",
+              fontSize: "11px",
               color: "var(--text-secondary)",
-              marginBottom: "4px",
+              marginBottom: "6px",
               textTransform: "uppercase",
-              letterSpacing: "1px",
+              letterSpacing: "1.5px",
             }}
           >
             You're writing about
           </p>
-          <p style={{ fontSize: "20px", fontWeight: "bold", color: "var(--accent)" }}>
-            {targetName}
+          <p style={{
+            fontSize: "22px",
+            fontWeight: "bold",
+            background: "linear-gradient(135deg, #ff6b9d, #c44dff)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+          }}>
+            💌 {targetName}
           </p>
         </div>
       )}
 
       {/* Prompt Display */}
       {prompt && (
-        <div style={cardStyle}>
+        <div style={{
+          ...cardStyle,
+          background: "linear-gradient(135deg, var(--bg-secondary), rgba(108, 99, 255, 0.05))",
+          border: "1px solid rgba(108, 99, 255, 0.15)",
+        }}>
           <p
             style={{
-              fontSize: "12px",
+              fontSize: "11px",
               color: "var(--text-secondary)",
-              marginBottom: "6px",
+              marginBottom: "8px",
               textTransform: "uppercase",
               letterSpacing: "1px",
             }}
           >
-            Prompt
+            ✨ Prompt
           </p>
-          <p style={{ fontSize: "16px", fontWeight: "500", color: "var(--text-primary)" }}>
+          <p style={{ fontSize: "17px", fontWeight: "500", color: "var(--text-primary)", lineHeight: "1.5" }}>
             {prompt}
           </p>
         </div>
@@ -441,21 +492,24 @@ const RoundPhase: React.FC<RoundPhaseProps> = ({
                 setAnswerText(e.target.value);
               }
             }}
-            placeholder="Write your anonymous answer..."
+            placeholder="Write your anonymous message... ✍️"
             maxLength={MAX_ANSWER_LENGTH}
-            rows={4}
+            rows={3}
             style={{
               width: "100%",
-              padding: "12px",
+              padding: "14px",
               fontSize: "15px",
-              borderRadius: "8px",
+              borderRadius: "12px",
               border: "2px solid var(--bg-tertiary)",
               background: "var(--bg-secondary)",
               color: "var(--text-primary)",
-              resize: "vertical",
+              resize: "none",
               fontFamily: "inherit",
               boxSizing: "border-box",
+              transition: "border-color 0.2s ease",
             }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = "#ff6b9d"; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = "var(--bg-tertiary)"; }}
             aria-label="Your anonymous answer"
           />
           <div
@@ -465,7 +519,7 @@ const RoundPhase: React.FC<RoundPhaseProps> = ({
               fontSize: "12px",
               color:
                 answerText.length > MAX_ANSWER_LENGTH * 0.9
-                  ? "var(--danger)"
+                  ? "#ff4757"
                   : "var(--text-secondary)",
               marginTop: "4px",
             }}
@@ -478,29 +532,35 @@ const RoundPhase: React.FC<RoundPhaseProps> = ({
             style={{
               ...buttonBase,
               background:
-                answerText.trim().length > 0 ? "var(--accent)" : "var(--bg-tertiary)",
+                answerText.trim().length > 0
+                  ? "linear-gradient(135deg, #ff6b9d, #c44dff)"
+                  : "var(--bg-tertiary)",
               color: answerText.trim().length > 0 ? "#ffffff" : "var(--text-secondary)",
               cursor: answerText.trim().length > 0 ? "pointer" : "not-allowed",
               marginTop: "8px",
+              boxShadow: answerText.trim().length > 0 ? "0 4px 16px rgba(255, 107, 157, 0.3)" : "none",
             }}
           >
-            Submit Answer
+            {answerText.trim().length > 0 ? "💌 Send Message" : "Write something..."}
           </button>
         </div>
       ) : (
         <div
           style={{
             textAlign: "center",
-            padding: "24px 16px",
-            background: "var(--bg-secondary)",
-            borderRadius: "12px",
+            padding: "28px 16px",
+            background: "linear-gradient(135deg, rgba(46, 213, 115, 0.08), rgba(108, 99, 255, 0.05))",
+            borderRadius: "16px",
             marginBottom: "16px",
+            border: "1px solid rgba(46, 213, 115, 0.25)",
+            animation: "sa-fadeIn 0.3s ease-out",
           }}
         >
-          <p style={{ fontSize: "18px", fontWeight: "bold", color: "var(--success)" }}>
-            ✓ Answer submitted!
+          <p style={{ fontSize: "28px", marginBottom: "6px" }}>✨</p>
+          <p style={{ fontSize: "16px", fontWeight: "bold", color: "var(--success)" }}>
+            Message sent!
           </p>
-          <p style={{ color: "var(--text-secondary)", marginTop: "8px" }}>
+          <p style={{ color: "var(--text-secondary)", marginTop: "6px", fontSize: "13px" }}>
             Waiting for others...
           </p>
         </div>
@@ -513,9 +573,14 @@ const RoundPhase: React.FC<RoundPhaseProps> = ({
           fontSize: "13px",
           color: "var(--text-secondary)",
           marginBottom: "16px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "6px",
         }}
       >
-        {submittedCount} / {totalPlayers} players submitted
+        <span style={{ fontSize: "14px" }}>✍️</span>
+        {submittedCount} / {totalPlayers} submitted
       </div>
 
       {/* Custom Prompt Input */}

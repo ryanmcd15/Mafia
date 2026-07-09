@@ -38,19 +38,19 @@ const headingStyle: React.CSSProperties = {
 
 const timerBarContainerStyle: React.CSSProperties = {
   width: "100%",
-  height: "6px",
+  height: "4px",
   background: "var(--bg-tertiary)",
-  borderRadius: "3px",
+  borderRadius: "2px",
   marginBottom: "16px",
   overflow: "hidden",
 };
 
 const messageCardStyle: React.CSSProperties = {
-  background: "var(--bg-secondary)",
-  borderRadius: "12px",
+  background: "linear-gradient(135deg, var(--bg-secondary), rgba(255, 107, 157, 0.04))",
+  borderRadius: "16px",
   padding: "16px",
   marginBottom: "12px",
-  border: "1px solid var(--bg-tertiary)",
+  border: "1px solid rgba(255, 107, 157, 0.15)",
 };
 
 const messageLabelStyle: React.CSSProperties = {
@@ -178,8 +178,14 @@ export const ReactionPhase: React.FC<ReactionPhaseProps> = ({
   const timerColor = timeRemaining <= 10 ? "var(--danger)" : "var(--accent)";
 
   return (
-    <div style={containerStyle}>
-      <h2 style={headingStyle}>React to Messages</h2>
+    <div style={{ ...containerStyle, animation: "sa-fadeIn 0.4s ease-out" }}>
+      <h2 style={{
+        ...headingStyle,
+        background: "linear-gradient(135deg, #ff6b9d, #c44dff)",
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+        fontSize: "22px",
+      }}>💌 React to Messages</h2>
 
       {/* Timer indicator */}
       <div style={{ textAlign: "center", marginBottom: "8px" }}>
