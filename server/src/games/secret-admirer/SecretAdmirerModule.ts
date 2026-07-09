@@ -412,7 +412,7 @@ export class SecretAdmirerModule implements GameModule {
 
     // Validate spiceLevel (Req 2.4)
     if (data.spiceLevel !== undefined) {
-      const validLevels: SpiceLevel[] = ["mild", "medium", "hot"];
+      const validLevels: SpiceLevel[] = ["mild", "medium", "hot", "explicit"];
       if (!validLevels.includes(data.spiceLevel as SpiceLevel)) {
         this.context.emitToPlayer(socketId, "saError", {
           message: "Invalid spice level",
