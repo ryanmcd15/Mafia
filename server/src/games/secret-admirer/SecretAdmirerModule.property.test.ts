@@ -1148,7 +1148,7 @@ describe("Property 18: Non-blank messages presented for voting", () => {
           vi.advanceTimersByTime(60_000 + 100);
 
           // Advance past the 60s reaction timer to transition to voting
-          vi.advanceTimersByTime(60_000 + 100);
+          vi.advanceTimersByTime(15_000 + 100);
 
           // Find the saVotingStarted event (now emitted per-player)
           const votingStartedEvents = emittedEvents.filter(
@@ -1239,8 +1239,8 @@ describe("Property 16: Voting constraints", () => {
       }
     }
 
-    // Advance the reaction timer (60s) to move to voting phase
-    vi.advanceTimersByTime(60_000);
+    // Advance the reaction timer (15s) to move to voting phase
+    vi.advanceTimersByTime(15_000);
 
     // Verify we're in voting phase
     const stateAfterReactions = module.getState("player-0") as { phase: string };
@@ -1459,8 +1459,8 @@ describe("Property 19: Guess validation", () => {
       for (let i = 0; i < playerCount; i++) {
         module.handleEvent(`player-${i}`, "submitAnswer", { text: `Answer ${round}-${i}` });
       }
-      // Advance past reaction timer (60s)
-      vi.advanceTimersByTime(60_000);
+      // Advance past reaction timer (15s)
+      vi.advanceTimersByTime(15_000);
       // Advance past voting timer (30s)
       vi.advanceTimersByTime(30_000);
     }
@@ -1879,7 +1879,7 @@ describe("Property 7: Information hiding before reveal", () => {
           }
 
           // Advance to voting phase
-          vi.advanceTimersByTime(60_000);
+          vi.advanceTimersByTime(15_000);
 
           // Now in voting phase — votingMessages should also not contain authorship
           for (let i = 0; i < playerCount; i++) {
@@ -1934,8 +1934,8 @@ describe("Property 7: Information hiding before reveal", () => {
             for (let i = 0; i < playerCount; i++) {
               module.handleEvent(`player-${i}`, "submitAnswer", { text: `Answer r${round} p${i}` });
             }
-            // Advance past reaction timer (60s)
-            vi.advanceTimersByTime(60_000);
+            // Advance past reaction timer (15s)
+            vi.advanceTimersByTime(15_000);
             // Advance past voting timer (30s)
             vi.advanceTimersByTime(30_000);
           }
@@ -2126,7 +2126,7 @@ describe("Property 7: Information hiding before reveal", () => {
           }
 
           // Advance past reaction timer → voting
-          vi.advanceTimersByTime(60_000);
+          vi.advanceTimersByTime(15_000);
 
           // === Phase: voting ===
           for (let i = 0; i < playerCount; i++) {
@@ -2141,7 +2141,7 @@ describe("Property 7: Information hiding before reveal", () => {
             for (let i = 0; i < playerCount; i++) {
               module.handleEvent(`player-${i}`, "submitAnswer", { text: `R${round} P${i}` });
             }
-            vi.advanceTimersByTime(60_000); // reaction timer
+            vi.advanceTimersByTime(15_000); // reaction timer
             vi.advanceTimersByTime(30_000); // voting timer
           }
 
@@ -2224,8 +2224,8 @@ describe("Property 8: Prompt non-repetition and consistency", () => {
               });
             }
 
-            // Advance past reactions timer (60s)
-            vi.advanceTimersByTime(60_000);
+            // Advance past reactions timer (15s)
+            vi.advanceTimersByTime(15_000);
 
             // Advance past voting timer (30s) — triggers next round or guessing phase
             vi.advanceTimersByTime(30_000);

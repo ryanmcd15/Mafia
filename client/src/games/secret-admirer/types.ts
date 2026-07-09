@@ -82,6 +82,7 @@ export interface RevealData {
   }>;
   messages: Array<{
     roundNumber: number;
+    prompt: string | null;
     messages: Array<{
       authorId: string;
       authorName: string;

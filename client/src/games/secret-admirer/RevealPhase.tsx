@@ -340,10 +340,15 @@ export const RevealPhase: React.FC<RevealPhaseProps> = ({ revealData, isHost }) 
                 📝 All Messages ({messages.length} rounds)
               </div>
               {messages.map((round) => (
-                <div key={round.roundNumber} style={{ marginBottom: "10px" }}>
-                  <div style={{ fontSize: "12px", fontWeight: "600", color: "var(--accent)", marginBottom: "4px" }}>
+                <div key={round.roundNumber} style={{ marginBottom: "14px" }}>
+                  <div style={{ fontSize: "12px", fontWeight: "600", color: "var(--accent)", marginBottom: "2px" }}>
                     Round {round.roundNumber}
                   </div>
+                  {round.prompt && (
+                    <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "6px", fontStyle: "italic" }}>
+                      ✨ &ldquo;{round.prompt}&rdquo;
+                    </div>
+                  )}
                   {round.messages.map((msg, idx) => (
                     <div
                       key={`${round.roundNumber}-${idx}`}

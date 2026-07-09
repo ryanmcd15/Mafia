@@ -43,6 +43,7 @@ export interface SecretAdmirerState {
   totalRounds: number;
   usedPrompts: Set<string>;
   currentPrompt: string | null;
+  roundPrompts: Map<number, string>;   // round → prompt used
   customPromptQueue: Map<string, string>; // playerId → prompt text
   roundMessages: Map<number, RoundMessage[]>; // round → messages
   currentRoundAnswers: Map<string, string>;   // playerId → answer text
@@ -124,6 +125,7 @@ export interface RevealData {
   }>;
   messages: Array<{
     roundNumber: number;
+    prompt: string | null;
     messages: Array<{
       authorId: string;
       authorName: string;

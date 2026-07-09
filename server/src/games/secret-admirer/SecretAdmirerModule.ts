@@ -68,6 +68,7 @@ export class SecretAdmirerModule implements GameModule {
       totalRounds: DEFAULT_CONFIG.rounds,
       usedPrompts: new Set(),
       currentPrompt: null,
+      roundPrompts: new Map(),
       customPromptQueue: new Map(),
       roundMessages: new Map(),
       currentRoundAnswers: new Map(),
@@ -582,6 +583,7 @@ export class SecretAdmirerModule implements GameModule {
     // Track selected prompt to avoid repetition (Req 4.2)
     this.state.usedPrompts.add(selectedPrompt);
     this.state.currentPrompt = selectedPrompt;
+    this.state.roundPrompts.set(this.state.currentRound, selectedPrompt);
     this.state.currentRoundAnswers = new Map();
     this.state.roundStartTime = Date.now();
 
@@ -1268,6 +1270,7 @@ export class SecretAdmirerModule implements GameModule {
       const roundMsgs = this.state.roundMessages.get(roundNumber) ?? [];
       messagesReveal.push({
         roundNumber,
+        prompt: this.state.roundPrompts.get(roundNumber) ?? null,
         messages: roundMsgs.map((msg) => ({
           authorId: msg.authorId,
           authorName: playerNames.get(msg.authorId) ?? msg.authorId,
