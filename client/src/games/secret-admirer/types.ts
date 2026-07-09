@@ -1,6 +1,6 @@
 // --- Spice Levels ---
 
-export type SpiceLevel = "mild" | "medium" | "hot";
+export type SpiceLevel = "mild" | "medium" | "hot" | "explicit";
 
 // --- Configuration ---
 

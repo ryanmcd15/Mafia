@@ -16,6 +16,7 @@ export interface PromptFileData {
   mild: string[];
   medium: string[];
   hot: string[];
+  explicit?: string[];
 }
 
 /** Result of prompt file validation */
@@ -36,11 +37,13 @@ const MAX_PROMPT_LENGTH = 280;
 /**
  * Fallback order when a spice level is exhausted (Req 4.5):
  * Mild → Medium → Hot → Mild (cyclic)
+ * Explicit → Hot → Medium → Mild
  */
 const FALLBACK_ORDER: Record<SpiceLevel, SpiceLevel[]> = {
   mild: ["medium", "hot"],
   medium: ["hot", "mild"],
   hot: ["mild", "medium"],
+  explicit: ["hot", "medium", "mild"],
 };
 
 /**
@@ -131,7 +134,12 @@ export class PromptPool {
       return null;
     }
 
-    const available = this.prompts[spiceLevel].filter((p) => !usedPrompts.has(p));
+    const levelPrompts = this.prompts[spiceLevel];
+    if (!levelPrompts || levelPrompts.length === 0) {
+      return null;
+    }
+
+    const available = levelPrompts.filter((p) => !usedPrompts.has(p));
     if (available.length === 0) {
       return null;
     }

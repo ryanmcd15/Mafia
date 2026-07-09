@@ -169,11 +169,12 @@ const ConfigPhase: React.FC<ConfigPhaseProps> = ({
   onConfigChange,
   onStartGame,
 }) => {
-  const spiceLevels: SpiceLevel[] = ["mild", "medium", "hot"];
+  const spiceLevels: SpiceLevel[] = ["mild", "medium", "hot", "explicit"];
   const spiceLabels: Record<SpiceLevel, string> = {
     mild: "🌿 Mild",
     medium: "🌶️ Medium",
     hot: "🔥 Hot",
+    explicit: "🔞 18+",
   };
 
   useEffect(() => { injectKeyframes(); }, []);
@@ -241,16 +242,19 @@ const ConfigPhase: React.FC<ConfigPhaseProps> = ({
               mild: isActive ? "rgba(46, 213, 115, 0.15)" : "var(--bg-secondary)",
               medium: isActive ? "rgba(255, 165, 2, 0.15)" : "var(--bg-secondary)",
               hot: isActive ? "rgba(255, 71, 87, 0.15)" : "var(--bg-secondary)",
+              explicit: isActive ? "rgba(156, 39, 176, 0.15)" : "var(--bg-secondary)",
             };
             const borderMap: Record<SpiceLevel, string> = {
               mild: isActive ? "#2ed573" : "var(--bg-tertiary)",
               medium: isActive ? "#ffa502" : "var(--bg-tertiary)",
               hot: isActive ? "#ff4757" : "var(--bg-tertiary)",
+              explicit: isActive ? "#9c27b0" : "var(--bg-tertiary)",
             };
             const colorMap: Record<SpiceLevel, string> = {
               mild: isActive ? "#2ed573" : "var(--text-primary)",
               medium: isActive ? "#ffa502" : "var(--text-primary)",
               hot: isActive ? "#ff4757" : "var(--text-primary)",
+              explicit: isActive ? "#9c27b0" : "var(--text-primary)",
             };
             return (
               <button
