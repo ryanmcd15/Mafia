@@ -58,9 +58,33 @@ function injectKeyframes() {
     @keyframes sa-heartbeat { 0%,100% { transform:scale(1); } 14% { transform:scale(1.3); } 28% { transform:scale(1); } 42% { transform:scale(1.3); } 70% { transform:scale(1); } }
     @keyframes sa-slideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
     @keyframes sa-confetti { 0% { transform:translateY(0) rotate(0deg); opacity:1; } 100% { transform:translateY(-40px) rotate(360deg); opacity:0; } }
+    @keyframes sa-scaleIn { from { opacity:0; transform:scale(0.5); } to { opacity:1; transform:scale(1); } }
+    @keyframes sa-waitPulse { 0%,100% { opacity:0.6; } 50% { opacity:1; } }
   `;
   document.head.appendChild(s);
 }
+
+// ---------- Transition Types ----------
+
+type TransitionScreen =
+  | null
+  | "assignmentReveal"
+  | "roundResults"
+  | "tallyingReactions"
+  | "guessingIntro";
+
+// ---------- Encouraging Messages ----------
+
+const WAITING_MESSAGES = [
+  "Good things come to those who wait... 💭",
+  "Your message is out there making someone smile 😊",
+  "The suspense is part of the fun ✨",
+  "Secret admirers are hard at work... 💌",
+  "Almost there, hang tight! 🌟",
+  "Great minds write alike... or do they? 🤔",
+  "Patience is a virtue, especially in love 💕",
+  "The best messages take time 🎨",
+];
 
 // ---------- Styles ----------
 
@@ -404,17 +428,26 @@ const RoundPhase: React.FC<RoundPhaseProps> = ({
 
   return (
     <div style={containerStyle}>
-      {/* Round Counter with progress dots */}
+      {/* Round Counter - prominent */}
       <div
         style={{
           textAlign: "center",
-          fontSize: "13px",
-          color: "var(--text-secondary)",
-          marginBottom: "6px",
-          letterSpacing: "0.5px",
+          marginBottom: "8px",
         }}
       >
-        Round {currentRound} of {totalRounds}
+        <span style={{
+          display: "inline-block",
+          padding: "4px 14px",
+          borderRadius: "20px",
+          fontSize: "13px",
+          fontWeight: "600",
+          background: "linear-gradient(135deg, rgba(108, 99, 255, 0.12), rgba(196, 77, 255, 0.08))",
+          border: "1px solid rgba(108, 99, 255, 0.25)",
+          color: "var(--text-primary)",
+          letterSpacing: "0.5px",
+        }}>
+          Round {currentRound} of {totalRounds}
+        </span>
       </div>
 
       {/* Timer - big and dramatic */}
@@ -560,8 +593,14 @@ const RoundPhase: React.FC<RoundPhaseProps> = ({
           <p style={{ fontSize: "16px", fontWeight: "bold", color: "var(--success)" }}>
             Message sent!
           </p>
-          <p style={{ color: "var(--text-secondary)", marginTop: "6px", fontSize: "13px" }}>
-            Waiting for others...
+          <p style={{
+            color: "var(--text-secondary)",
+            marginTop: "10px",
+            fontSize: "13px",
+            fontStyle: "italic",
+            animation: "sa-waitPulse 2s ease-in-out infinite",
+          }}>
+            {WAITING_MESSAGES[currentRound % WAITING_MESSAGES.length]}
           </p>
         </div>
       )}
@@ -711,6 +750,23 @@ export const SecretAdmirerGame: React.FC<GameUIProps> = ({
   const [scores, setScores] = useState<Record<string, number>>({});
   const [messagesDeliveredAt, setMessagesDeliveredAt] = useState<number>(Date.now());
 
+  // Transition state
+  const [transition, setTransition] = useState<TransitionScreen>(null);
+  const [roundResultsData, setRoundResultsData] = useState<{
+    winningMessageId: string | null;
+    winningText: string | null;
+    scores: Record<string, number>;
+  } | null>(null);
+  const [waitingMessage] = useState(() =>
+    WAITING_MESSAGES[Math.floor(Math.random() * WAITING_MESSAGES.length)]
+  );
+
+  // Ref to keep voting messages accessible in socket handler without stale closure
+  const votingMessagesRef = React.useRef(votingMessages);
+  React.useEffect(() => {
+    votingMessagesRef.current = votingMessages;
+  }, [votingMessages]);
+
   // ---------- Socket listeners ----------
 
   useEffect(() => {
@@ -746,6 +802,11 @@ export const SecretAdmirerGame: React.FC<GameUIProps> = ({
 
     function handleAssignment(data: SaAssignmentPayload) {
       setTargetName(data.targetName);
+      // Show the dramatic assignment reveal for 3 seconds
+      setTransition("assignmentReveal");
+      setTimeout(() => {
+        setTransition(null);
+      }, 3000);
     }
 
     function handleTimerUpdate(data: { timeRemaining: number }) {
@@ -756,7 +817,12 @@ export const SecretAdmirerGame: React.FC<GameUIProps> = ({
       setGuessOptions(data.players);
       setTimeRemaining(data.timeRemaining);
       setHasGuessed(false);
-      setPhase("guessing");
+      // Show guessing intro transition for 2 seconds
+      setTransition("guessingIntro");
+      setTimeout(() => {
+        setTransition(null);
+        setPhase("guessing");
+      }, 2000);
     }
 
     function handleVotingStarted(data: SaVotingStartedPayload & { myMessageId?: string; totalEligible?: number }) {
@@ -766,7 +832,12 @@ export const SecretAdmirerGame: React.FC<GameUIProps> = ({
       setVotesIn(0);
       setTotalEligible(data.totalEligible ?? 0);
       setMyMessageId(data.myMessageId ?? null);
-      setPhase("voting");
+      // Show "tallying reactions" transition for 1 second before voting
+      setTransition("tallyingReactions");
+      setTimeout(() => {
+        setTransition(null);
+        setPhase("voting");
+      }, 1000);
     }
 
     function handleVoteReceived(data: SaVoteReceivedPayload) {
@@ -792,6 +863,20 @@ export const SecretAdmirerGame: React.FC<GameUIProps> = ({
 
     function handleRoundResults(data: SaRoundResultsPayload) {
       setScores(data.scores);
+      // Find the winning message text from current voting messages
+      const winningText = data.winningMessageId
+        ? votingMessagesRef.current.find((m) => m.id === data.winningMessageId)?.text ?? null
+        : null;
+      setRoundResultsData({
+        winningMessageId: data.winningMessageId,
+        winningText,
+        scores: data.scores,
+      });
+      // Show round results transition for 3 seconds
+      setTransition("roundResults");
+      setTimeout(() => {
+        setTransition(null);
+      }, 3000);
     }
 
     socket.on("saPhaseChanged", handlePhaseChanged);
@@ -867,6 +952,104 @@ export const SecretAdmirerGame: React.FC<GameUIProps> = ({
   }, []);
 
   // ---------- Phase Rendering ----------
+
+  // Transition screens take priority over phase rendering
+  if (transition === "assignmentReveal" && targetName) {
+    return (
+      <div style={{ ...containerStyle, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+        <div style={{ animation: "sa-scaleIn 0.5s ease-out", marginBottom: "24px" }}>
+          <div style={{ fontSize: "64px", marginBottom: "16px", animation: "sa-heartbeat 1.5s ease-in-out infinite" }}>💌</div>
+          <p style={{ fontSize: "14px", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "2px", marginBottom: "12px" }}>
+            Your secret target is...
+          </p>
+          <p style={{
+            fontSize: "32px",
+            fontWeight: "bold",
+            background: "linear-gradient(135deg, #ff6b9d, #c44dff)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            animation: "sa-slideUp 0.6s ease-out 0.3s both",
+          }}>
+            {targetName}
+          </p>
+        </div>
+        <p style={{ fontSize: "13px", color: "var(--text-secondary)", animation: "sa-fadeIn 0.5s ease-out 0.8s both" }}>
+          Write anonymous messages about them... 🤫
+        </p>
+      </div>
+    );
+  }
+
+  if (transition === "roundResults" && roundResultsData) {
+    return (
+      <div style={{ ...containerStyle, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+        <div style={{ animation: "sa-scaleIn 0.4s ease-out" }}>
+          <div style={{ fontSize: "48px", marginBottom: "12px", animation: "sa-confetti 2s ease-out infinite" }}>🏆</div>
+          <p style={{ fontSize: "18px", fontWeight: "bold", color: "var(--text-primary)", marginBottom: "16px" }}>
+            Round {currentRound} Results
+          </p>
+          {roundResultsData.winningText ? (
+            <div style={{
+              background: "linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 107, 157, 0.08))",
+              border: "2px solid rgba(255, 215, 0, 0.3)",
+              borderRadius: "16px",
+              padding: "16px",
+              marginBottom: "16px",
+              maxWidth: "320px",
+              animation: "sa-slideUp 0.4s ease-out 0.2s both",
+            }}>
+              <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "1px" }}>
+                ⭐ Community Favorite
+              </p>
+              <p style={{ fontSize: "15px", color: "var(--text-primary)", fontStyle: "italic", lineHeight: "1.5" }}>
+                &ldquo;{roundResultsData.winningText}&rdquo;
+              </p>
+            </div>
+          ) : (
+            <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginBottom: "16px" }}>
+              No votes this round — on to the next! 🚀
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (transition === "tallyingReactions") {
+    return (
+      <div style={{ ...containerStyle, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+        <div style={{ animation: "sa-pulse 1s ease-in-out infinite" }}>
+          <div style={{ fontSize: "48px", marginBottom: "16px" }}>💫</div>
+          <p style={{ fontSize: "18px", fontWeight: "bold", color: "var(--text-primary)" }}>
+            Tallying reactions...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (transition === "guessingIntro") {
+    return (
+      <div style={{ ...containerStyle, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+        <div style={{ animation: "sa-scaleIn 0.5s ease-out" }}>
+          <div style={{ fontSize: "56px", marginBottom: "16px", animation: "sa-float 2s ease-in-out infinite" }}>🕵️</div>
+          <p style={{
+            fontSize: "22px",
+            fontWeight: "bold",
+            background: "linear-gradient(135deg, #6c63ff, #c44dff)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            marginBottom: "8px",
+          }}>
+            Time to guess your admirer!
+          </p>
+          <p style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
+            Who&apos;s been writing about you? 🤔
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (phase === "config") {
     return (
