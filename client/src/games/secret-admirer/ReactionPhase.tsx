@@ -27,6 +27,8 @@ const containerStyle: React.CSSProperties = {
   maxWidth: "480px",
   margin: "0 auto",
   color: "var(--text-primary)",
+  minHeight: "100vh",
+  background: "radial-gradient(ellipse at top, rgba(108, 99, 255, 0.08) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(255, 107, 157, 0.06) 0%, transparent 50%)",
 };
 
 const headingStyle: React.CSSProperties = {

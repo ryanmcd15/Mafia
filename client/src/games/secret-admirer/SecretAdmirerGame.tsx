@@ -94,6 +94,8 @@ const containerStyle: React.CSSProperties = {
   margin: "0 auto",
   color: "var(--text-primary)",
   animation: "sa-fadeIn 0.4s ease-out",
+  minHeight: "100vh",
+  background: "radial-gradient(ellipse at top, rgba(108, 99, 255, 0.08) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(255, 107, 157, 0.06) 0%, transparent 50%)",
 };
 
 const headingStyle: React.CSSProperties = {

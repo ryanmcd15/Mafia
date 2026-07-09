@@ -49,7 +49,7 @@ export const VotingPhase: React.FC<VotingPhaseProps> = ({
   }
 
   return (
-    <div style={{ padding: "24px 16px", maxWidth: "480px", margin: "0 auto", color: "var(--text-primary)" }}>
+    <div style={{ padding: "24px 16px", maxWidth: "480px", margin: "0 auto", color: "var(--text-primary)", minHeight: "100vh", background: "radial-gradient(ellipse at top, rgba(108, 99, 255, 0.08) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(255, 107, 157, 0.06) 0%, transparent 50%)" }}>
       {/* Header with gradient */}
       <div style={{ textAlign: "center", marginBottom: "20px" }}>
         <h2

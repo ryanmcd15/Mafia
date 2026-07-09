@@ -1056,7 +1056,7 @@ export class SecretAdmirerModule implements GameModule {
     // Emit saGuessingStarted with player list and timer (Req 8.1, 8.2)
     this.context.emitToRoom("saGuessingStarted", {
       players: playerList,
-      timeRemaining: 60,
+      timeRemaining: 20,
     });
 
     // Emit phase change
@@ -1064,10 +1064,10 @@ export class SecretAdmirerModule implements GameModule {
       phase: "guessing",
     });
 
-    // Start 60-second guessing timer (Req 8.1, 8.6, 8.7)
+    // Start 20-second guessing timer (Req 8.1, 8.6, 8.7)
     this.state.guessingTimer = setTimeout(() => {
       this.endGuessingPhase();
-    }, 60_000);
+    }, 20_000);
   }
 
   /**
