@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import type { RevealData } from "./types";
-import { socket } from "../../socket";
+import socket from "../../socket";
 
 // ---------- Types ----------
 
