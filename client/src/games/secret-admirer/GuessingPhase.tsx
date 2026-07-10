@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 // ---------- Types ----------
 
@@ -17,14 +17,24 @@ const GUESSING_WINDOW_SECONDS = 20;
 
 export const GuessingPhase: React.FC<GuessingPhaseProps> = ({
   guessOptions,
-  timeRemaining,
+  timeRemaining: initialTime,
   hasGuessed,
   onGuess,
 }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [timeLeft, setTimeLeft] = useState(initialTime);
 
-  const timerProgress = timeRemaining / GUESSING_WINDOW_SECONDS;
-  const timerColor = timeRemaining <= 10 ? "#ff4757" : "#6c63ff";
+  // Countdown timer
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timeLeft]);
+
+  const timerProgress = timeLeft / GUESSING_WINDOW_SECONDS;
+  const timerColor = timeLeft <= 10 ? "#ff4757" : "#6c63ff";
 
   function handleSubmit() {
     if (selectedId && !hasGuessed) {
@@ -59,12 +69,12 @@ export const GuessingPhase: React.FC<GuessingPhaseProps> = ({
           aria-live="polite"
           style={{
             fontSize: "14px",
-            color: timeRemaining <= 10 ? "#ff4757" : "var(--text-secondary)",
+            color: timeLeft <= 10 ? "#ff4757" : "var(--text-secondary)",
             fontVariantNumeric: "tabular-nums",
-            fontWeight: timeRemaining <= 10 ? "bold" : "normal",
+            fontWeight: timeLeft <= 10 ? "bold" : "normal",
           }}
         >
-          {timeRemaining <= 0 ? "⏰ Time's up!" : `${timeRemaining}s remaining`}
+          {timeLeft <= 0 ? "⏰ Time's up!" : `${timeLeft}s remaining`}
         </span>
       </div>
       <div

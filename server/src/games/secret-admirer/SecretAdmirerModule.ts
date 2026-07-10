@@ -1401,6 +1401,11 @@ export class SecretAdmirerModule implements GameModule {
       playerNames,
     });
 
+    // Resolve player IDs to display names in award winners
+    for (const award of awards) {
+      award.winners = award.winners.map((id) => playerNames.get(id) ?? id);
+    }
+
     return {
       cycle: cycleReveal,
       guesses: guessesReveal,
