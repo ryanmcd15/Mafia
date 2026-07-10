@@ -587,13 +587,25 @@ export class SecretAdmirerModule implements GameModule {
     this.state.currentRoundAnswers = new Map();
     this.state.roundStartTime = Date.now();
 
-    // Emit saRoundStarted to all players (Req 5.1)
-    this.context.emitToRoom("saRoundStarted", {
-      roundNumber: this.state.currentRound,
-      totalRounds: this.state.totalRounds,
-      prompt: selectedPrompt,
-      timeRemaining: this.state.config.roundTimer,
-    });
+    // Emit saRoundStarted to each player with their personalized prompt (Req 5.1)
+    const connectedPlayers = this.context.getPlayers().filter((p) => p.isConnected);
+    const playerNames = new Map<string, string>();
+    for (const p of connectedPlayers) {
+      playerNames.set(p.id, p.name);
+    }
+
+    for (const player of connectedPlayers) {
+      const targetId = this.state.cycle.get(player.id);
+      const targetName = targetId ? (playerNames.get(targetId) ?? "your target") : "your target";
+      const personalizedPrompt = selectedPrompt.replace(/\{target\}/g, targetName);
+
+      this.context.emitToPlayer(player.id, "saRoundStarted", {
+        roundNumber: this.state.currentRound,
+        totalRounds: this.state.totalRounds,
+        prompt: personalizedPrompt,
+        timeRemaining: this.state.config.roundTimer,
+      });
+    }
 
     // Start round timer (Req 5.7 — timer expiry ends round)
     this.state.roundTimer = setTimeout(() => {

@@ -60,6 +60,12 @@ function injectKeyframes() {
     @keyframes sa-confetti { 0% { transform:translateY(0) rotate(0deg); opacity:1; } 100% { transform:translateY(-40px) rotate(360deg); opacity:0; } }
     @keyframes sa-scaleIn { from { opacity:0; transform:scale(0.5); } to { opacity:1; transform:scale(1); } }
     @keyframes sa-waitPulse { 0%,100% { opacity:0.6; } 50% { opacity:1; } }
+    @keyframes sa-bgFloat1 { 0%,100% { transform:translate(0,0) rotate(0deg); opacity:0.06; } 50% { transform:translate(20px,-30px) rotate(15deg); opacity:0.12; } }
+    @keyframes sa-bgFloat2 { 0%,100% { transform:translate(0,0) rotate(0deg); opacity:0.04; } 50% { transform:translate(-15px,20px) rotate(-10deg); opacity:0.09; } }
+    @keyframes sa-bgFloat3 { 0%,100% { transform:translate(0,0); opacity:0.05; } 50% { transform:translate(10px,15px); opacity:0.1; } }
+    .sa-bg-wrapper { position:relative; min-height:100vh; overflow:hidden; }
+    .sa-bg-wrapper::before { content:'\\1F48C  \\2764  \\1F525  \\2728  \\1F48B'; position:absolute; top:10%; left:5%; font-size:40px; opacity:0.06; animation:sa-bgFloat1 8s ease-in-out infinite; pointer-events:none; z-index:0; letter-spacing:20px; }
+    .sa-bg-wrapper::after { content:'\\2728  \\1F48C  \\1F46B  \\1F48B  \\2764'; position:absolute; bottom:15%; right:5%; font-size:36px; opacity:0.05; animation:sa-bgFloat2 10s ease-in-out infinite; pointer-events:none; z-index:0; letter-spacing:16px; }
   `;
   document.head.appendChild(s);
 }
@@ -95,7 +101,9 @@ const containerStyle: React.CSSProperties = {
   color: "var(--text-primary)",
   animation: "sa-fadeIn 0.4s ease-out",
   minHeight: "100vh",
-  background: "radial-gradient(ellipse at top, rgba(108, 99, 255, 0.08) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(255, 107, 157, 0.06) 0%, transparent 50%)",
+  position: "relative",
+  zIndex: 1,
+  background: "radial-gradient(ellipse at 20% 20%, rgba(108, 99, 255, 0.1) 0%, transparent 40%), radial-gradient(ellipse at 80% 80%, rgba(255, 107, 157, 0.08) 0%, transparent 40%), radial-gradient(circle at 50% 50%, rgba(196, 77, 255, 0.04) 0%, transparent 60%)",
 };
 
 const headingStyle: React.CSSProperties = {
@@ -492,7 +500,7 @@ const RoundPhase: React.FC<RoundPhaseProps> = ({
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
           }}>
-            💌 {targetName}
+            {targetName}
           </p>
         </div>
       )}
