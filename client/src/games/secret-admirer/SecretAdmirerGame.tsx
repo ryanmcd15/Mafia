@@ -169,11 +169,11 @@ const ConfigPhase: React.FC<ConfigPhaseProps> = ({
   onConfigChange,
   onStartGame,
 }) => {
-  const spiceLevels: SpiceLevel[] = ["mild", "medium", "hot", "explicit"];
+  const spiceLevels: SpiceLevel[] = ["mild", "hot", "explicit"];
   const spiceLabels: Record<SpiceLevel, string> = {
     mild: "😂 Funny",
     medium: "🌶️ Medium",
-    hot: "🔥 Hot",
+    hot: "😏 Cheeky",
     explicit: "🔞 18+",
   };
 

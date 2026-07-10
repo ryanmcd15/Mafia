@@ -15,7 +15,7 @@ import type { SpiceLevel } from "./types.js";
 // ─── Constants ──────────────────────────────────────────────────────
 
 const SPICE_LEVELS: SpiceLevel[] = ["mild", "medium", "hot"];
-const MIN_PROMPTS = 100;
+const MIN_PROMPTS = 10;
 const MAX_PROMPT_LENGTH = 280;
 
 // ─── Test Directory ─────────────────────────────────────────────────
@@ -44,7 +44,7 @@ afterEach(() => {
 /** Generates a valid prompt string (1-280 characters). */
 const arbValidPrompt = fc.string({ minLength: 1, maxLength: MAX_PROMPT_LENGTH });
 
-/** Generates a valid array of prompts for one spice level (100+ prompts). */
+/** Generates a valid array of prompts for one spice level (10+ prompts). */
 const arbValidPromptArray = fc.integer({ min: MIN_PROMPTS, max: 150 }).chain((count) =>
   fc.array(arbValidPrompt, { minLength: count, maxLength: count })
 );
@@ -76,9 +76,9 @@ describe("Property 23: Prompt pool data validation", () => {
    *
    * For every prompt in the prompt pool JSON file, its character length
    * SHALL be between 1 and 280, and each spice level category ("mild",
-   * "medium", "hot") SHALL contain at least 100 prompts.
+   * "medium", "hot") SHALL contain at least 10 prompts.
    */
-  it("validate() accepts prompt pools where each level has 100+ prompts of 1-280 chars", () => {
+  it("validate() accepts prompt pools where each level has 10+ prompts of 1-280 chars", () => {
     fc.assert(
       fc.property(arbValidPromptPool, (data) => {
         const filePath = nextFilePath();
@@ -94,7 +94,7 @@ describe("Property 23: Prompt pool data validation", () => {
     );
   });
 
-  it("validate() rejects prompt pools where any level has fewer than 100 prompts", () => {
+  it("validate() rejects prompt pools where any level has fewer than 10 prompts", () => {
     fc.assert(
       fc.property(
         arbTooFewCount,

@@ -10,7 +10,7 @@ function generatePrompts(count: number, prefix: string): string[] {
 }
 
 /** Helper to create a valid prompt file */
-function createValidPromptFile(path: string, countsPerLevel = 100) {
+function createValidPromptFile(path: string, countsPerLevel = 10) {
   const data = {
     mild: generatePrompts(countsPerLevel, "Mild"),
     medium: generatePrompts(countsPerLevel, "Medium"),
@@ -65,8 +65,8 @@ describe("PromptPool", () => {
       writeFileSync(
         noHotPath,
         JSON.stringify({
-          mild: generatePrompts(100, "Mild"),
-          medium: generatePrompts(100, "Medium"),
+          mild: generatePrompts(10, "Mild"),
+          medium: generatePrompts(10, "Medium"),
         }),
         "utf-8"
       );
@@ -77,35 +77,35 @@ describe("PromptPool", () => {
       unlinkSync(noHotPath);
     });
 
-    it("should fail when a key has fewer than 100 prompts", () => {
+    it("should fail when a key has fewer than 10 prompts", () => {
       const tooFewPath = join(tempDir, "too-few.json");
       writeFileSync(
         tooFewPath,
         JSON.stringify({
-          mild: generatePrompts(100, "Mild"),
-          medium: generatePrompts(50, "Medium"),
-          hot: generatePrompts(100, "Hot"),
+          mild: generatePrompts(10, "Mild"),
+          medium: generatePrompts(5, "Medium"),
+          hot: generatePrompts(10, "Hot"),
         }),
         "utf-8"
       );
       const pool = new PromptPool(tooFewPath);
       const result = pool.validate();
       expect(result.valid).toBe(false);
-      expect(result.error).toContain('"medium" has 50 prompts');
+      expect(result.error).toContain('"medium" has 5 prompts');
       unlinkSync(tooFewPath);
     });
 
     it("should fail when a prompt exceeds 280 characters", () => {
       const longPath = join(tempDir, "long-prompt.json");
       const longPrompt = "x".repeat(281);
-      const prompts = generatePrompts(99, "Mild");
+      const prompts = generatePrompts(9, "Mild");
       prompts.push(longPrompt);
       writeFileSync(
         longPath,
         JSON.stringify({
           mild: prompts,
-          medium: generatePrompts(100, "Medium"),
-          hot: generatePrompts(100, "Hot"),
+          medium: generatePrompts(10, "Medium"),
+          hot: generatePrompts(10, "Hot"),
         }),
         "utf-8"
       );
@@ -118,13 +118,13 @@ describe("PromptPool", () => {
 
     it("should fail when a prompt is an empty string", () => {
       const emptyPath = join(tempDir, "empty-prompt.json");
-      const prompts = generatePrompts(99, "Hot");
+      const prompts = generatePrompts(9, "Hot");
       prompts.push("");
       writeFileSync(
         emptyPath,
         JSON.stringify({
-          mild: generatePrompts(100, "Mild"),
-          medium: generatePrompts(100, "Medium"),
+          mild: generatePrompts(10, "Mild"),
+          medium: generatePrompts(10, "Medium"),
           hot: prompts,
         }),
         "utf-8"
@@ -151,7 +151,7 @@ describe("PromptPool", () => {
       pool.validate();
 
       // Use all mild prompts except one
-      const usedPrompts = new Set(generatePrompts(99, "Mild"));
+      const usedPrompts = new Set(generatePrompts(9, "Mild"));
       const prompt = pool.getPrompt("mild", usedPrompts);
       expect(prompt).not.toBeNull();
       expect(usedPrompts.has(prompt!)).toBe(false);
@@ -161,7 +161,7 @@ describe("PromptPool", () => {
       const pool = new PromptPool(validPath);
       pool.validate();
 
-      const usedPrompts = new Set(generatePrompts(100, "Mild"));
+      const usedPrompts = new Set(generatePrompts(10, "Mild"));
       const prompt = pool.getPrompt("mild", usedPrompts);
       expect(prompt).toBeNull();
     });
@@ -180,7 +180,7 @@ describe("PromptPool", () => {
       pool.validate();
 
       // Exhaust mild — fallback should come from medium
-      const usedPrompts = new Set(generatePrompts(100, "Mild"));
+      const usedPrompts = new Set(generatePrompts(10, "Mild"));
       const prompt = pool.getFallbackPrompt("mild", usedPrompts);
       expect(prompt).not.toBeNull();
       expect(prompt!).toContain("Medium");
@@ -190,7 +190,7 @@ describe("PromptPool", () => {
       const pool = new PromptPool(validPath);
       pool.validate();
 
-      const usedPrompts = new Set(generatePrompts(100, "Medium"));
+      const usedPrompts = new Set(generatePrompts(10, "Medium"));
       const prompt = pool.getFallbackPrompt("medium", usedPrompts);
       expect(prompt).not.toBeNull();
       expect(prompt!).toContain("Hot");
@@ -200,7 +200,7 @@ describe("PromptPool", () => {
       const pool = new PromptPool(validPath);
       pool.validate();
 
-      const usedPrompts = new Set(generatePrompts(100, "Hot"));
+      const usedPrompts = new Set(generatePrompts(10, "Hot"));
       const prompt = pool.getFallbackPrompt("hot", usedPrompts);
       expect(prompt).not.toBeNull();
       expect(prompt!).toContain("Mild");
@@ -212,8 +212,8 @@ describe("PromptPool", () => {
 
       // Exhaust both mild and medium — fallback from mild should try medium (empty) then hot
       const usedPrompts = new Set([
-        ...generatePrompts(100, "Mild"),
-        ...generatePrompts(100, "Medium"),
+        ...generatePrompts(10, "Mild"),
+        ...generatePrompts(10, "Medium"),
       ]);
       const prompt = pool.getFallbackPrompt("mild", usedPrompts);
       expect(prompt).not.toBeNull();
@@ -225,9 +225,9 @@ describe("PromptPool", () => {
       pool.validate();
 
       const usedPrompts = new Set([
-        ...generatePrompts(100, "Mild"),
-        ...generatePrompts(100, "Medium"),
-        ...generatePrompts(100, "Hot"),
+        ...generatePrompts(10, "Mild"),
+        ...generatePrompts(10, "Medium"),
+        ...generatePrompts(10, "Hot"),
       ]);
       const prompt = pool.getFallbackPrompt("mild", usedPrompts);
       expect(prompt).toBeNull();
