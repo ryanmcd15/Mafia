@@ -103,7 +103,6 @@ const containerStyle: React.CSSProperties = {
   minHeight: "100vh",
   position: "relative",
   zIndex: 1,
-  background: "radial-gradient(ellipse at 20% 20%, rgba(108, 99, 255, 0.1) 0%, transparent 40%), radial-gradient(ellipse at 80% 80%, rgba(255, 107, 157, 0.08) 0%, transparent 40%), radial-gradient(circle at 50% 50%, rgba(196, 77, 255, 0.04) 0%, transparent 60%)",
 };
 
 const headingStyle: React.CSSProperties = {
@@ -780,6 +779,14 @@ export const SecretAdmirerGame: React.FC<GameUIProps> = ({
   React.useEffect(() => {
     votingMessagesRef.current = votingMessages;
   }, [votingMessages]);
+
+  // Set full-page background on mount, clean up on unmount
+  useEffect(() => {
+    injectKeyframes();
+    const prev = document.body.style.background;
+    document.body.style.background = "linear-gradient(160deg, #0f0c29 0%, #1a0a2e 30%, #16213e 60%, #0f0c29 100%)";
+    return () => { document.body.style.background = prev; };
+  }, []);
 
   // ---------- Socket listeners ----------
 
