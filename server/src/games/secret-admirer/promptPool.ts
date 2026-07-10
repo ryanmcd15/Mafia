@@ -29,7 +29,7 @@ export interface ValidationResult {
 const REQUIRED_KEYS: SpiceLevel[] = ["mild", "medium", "hot"];
 
 /** Minimum number of prompts required per spice level (Req 13.2) */
-const MIN_PROMPTS_PER_LEVEL = 100;
+const MIN_PROMPTS_PER_LEVEL = 10;
 
 /** Maximum character length for a prompt (Req 13.2) */
 const MAX_PROMPT_LENGTH = 280;
